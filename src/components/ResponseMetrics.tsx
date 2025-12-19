@@ -2,7 +2,6 @@ import type { UsageMetrics } from '../types/index.js'
 
 type ResponseMetricsProps = {
   usage?: UsageMetrics
-  model: string
   modelPricing?: {
     prompt: string
     completion: string
@@ -33,7 +32,7 @@ function formatDuration(ms: number): string {
   return `${minutes}m ${remainingSeconds}s`
 }
 
-export function ResponseMetrics({ usage, model, modelPricing }: ResponseMetricsProps) {
+export function ResponseMetrics({ usage, modelPricing }: ResponseMetricsProps) {
   if (!usage || !usage.totalTokens) {
     return null
   }

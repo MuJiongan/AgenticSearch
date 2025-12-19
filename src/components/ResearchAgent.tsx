@@ -89,7 +89,7 @@ export function ResearchAgent() {
                 sources={state.sources}
               />
 
-              {state.currentResponse && <ResponseMetrics usage={state.usage} model={state.model} modelPricing={currentModelPricing} />}
+              {state.currentResponse && <ResponseMetrics usage={state.usage} modelPricing={currentModelPricing} />}
 
               <SourceCitations sources={state.sources} />
 
