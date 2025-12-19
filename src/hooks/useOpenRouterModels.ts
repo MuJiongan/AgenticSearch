@@ -10,6 +10,7 @@ export type OpenRouterModel = {
         prompt: string
         completion: string
     }
+    supported_parameters?: string[]
 }
 
 export type CustomModel = {
@@ -44,7 +45,11 @@ export function useOpenRouterModels(apiKey: string) {
             }
 
             const data = await response.json()
-            setAllModels(data.data || [])
+            // Filter to only show models that support tool use
+            const toolCapableModels = (data.data || []).filter((model: OpenRouterModel) =>
+                model.supported_parameters?.includes('tools')
+            )
+            setAllModels(toolCapableModels)
         } catch (err: unknown) {
             setError(err instanceof Error ? err.message : 'Unknown error')
         } finally {

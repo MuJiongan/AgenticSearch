@@ -244,7 +244,7 @@ export function ModelSelector({ value, onChange, disabled, apiKey }: ModelSelect
           {/* Footer hint */}
           {allModels.length > 0 && (
             <div className="px-3 py-2 border-t border-border-subtle text-xs text-text-secondary">
-              {allModels.length} models available • Type to filter
+              {allModels.length} tool-capable models available • Type to filter
             </div>
           )}
         </div>
