@@ -3,7 +3,7 @@ import { OpenRouterClient } from '../openrouter/client.js'
 import { RESEARCH_TOOLS } from '../openrouter/tools.js'
 import { executeToolCall } from './tool-executor.js'
 
-const MAX_ITERATIONS = 5
+const MAX_ITERATIONS = 50
 
 export type ResearchQueryParams = {
   query: string
