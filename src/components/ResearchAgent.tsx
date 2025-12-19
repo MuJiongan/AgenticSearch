@@ -20,9 +20,9 @@ export function ResearchAgent() {
       <nav className="fixed top-0 left-0 right-0 h-16 border-b border-border-subtle bg-bg-nav backdrop-blur-md z-50 flex items-center justify-between px-6 transition-colors duration-300">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 bg-brand-primary rounded-lg flex items-center justify-center text-white font-bold text-xl">
-            P
+            A
           </div>
-          <span className="font-semibold text-lg tracking-tight">Parallel Search</span>
+          <span className="font-semibold text-lg tracking-tight">AgenticSearch</span>
         </div>
         <div className="flex items-center gap-4">
           <ThemeToggle />

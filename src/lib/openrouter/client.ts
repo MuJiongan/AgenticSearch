@@ -15,7 +15,7 @@ export class OpenRouterClient {
         'Authorization': `Bearer ${this.apiKey}`,
         'Content-Type': 'application/json',
         'HTTP-Referer': typeof window !== 'undefined' ? window.location.origin : '',
-        'X-Title': 'ParallelSearch Research Agent'
+        'X-Title': 'AgenticSearch Research Agent'
       },
       body: JSON.stringify({
         model: params.model,
