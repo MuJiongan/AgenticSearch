@@ -4,6 +4,8 @@ export type Message = {
   content: string
   tool_calls?: ToolCall[]
   tool_call_id?: string
+  // OpenRouter reasoning details - must be preserved for function calling with reasoning models
+  reasoning_details?: any[]
 }
 
 export type Tool = {
@@ -27,6 +29,7 @@ export type ToolCall = {
     arguments: string
   }
   status?: 'executing' | 'complete' | 'error'
+  preContent?: string  // Content the model output before invoking this tool batch
 }
 
 export type OpenRouterChatResponse = {
@@ -94,23 +97,19 @@ export type ModelOption = {
   provider: 'anthropic' | 'google' | 'openai'
 }
 
-export type ResearchStatus = 'idle' | 'searching' | 'thinking' | 'synthesizing' | 'complete' | 'error'
+export type ResearchStatus = 'idle' | 'searching' | 'synthesizing' | 'complete' | 'error'
 
 export type UsageMetrics = {
   promptTokens: number
   completionTokens: number
   totalTokens: number
   startTime: number
-  thinkingStartTime?: number    // When thinking phase starts
   synthesisStartTime?: number   // When output generation starts
   endTime?: number
-  thinkingDurationMs?: number   // Time spent thinking
   durationMs?: number           // Synthesis duration only
   totalDurationMs?: number      // Total time from start to finish
   tokensPerSecond?: number      // Based on actual response tokens
   responseCharCount?: number    // Character count for accurate speed calc
-  thinkingCharCount?: number    // Character count for thinking
-  isSimulatedStreaming?: boolean // True if response was pre-generated (not real streaming)
   estimatedCost?: number
 }
 
@@ -118,7 +117,6 @@ export type ResearchState = {
   status: ResearchStatus
   model: string
   currentResponse: string
-  thinkingContent: string
   toolCalls: ToolCall[]
   sources: Source[]
   error: string | null

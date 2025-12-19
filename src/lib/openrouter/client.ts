@@ -22,9 +22,7 @@ export class OpenRouterClient {
         messages: params.messages,
         tools: params.tools,
         tool_choice: params.tool_choice,
-        stream: params.stream ?? false,
-        // Include reasoning for thinking models
-        ...(params.include_reasoning && { include_reasoning: true })
+        stream: params.stream ?? false
       })
     })
 
@@ -38,13 +36,12 @@ export class OpenRouterClient {
     }
 
     // Handle SSE streaming and return accumulated result
-    return this.handleStream(response, params.onStream, params.onThinking, params.onToolCalls)
+    return this.handleStream(response, params.onStream, params.onToolCalls)
   }
 
   private async handleStream(
     response: Response,
     onChunk?: (chunk: string) => void,
-    onThinking?: (chunk: string) => void,
     onToolCalls?: (toolCalls: any[]) => void
   ): Promise<StreamingResult> {
     const reader = response.body?.getReader()
@@ -57,10 +54,13 @@ export class OpenRouterClient {
 
     // Accumulate data for final result
     let content = ''
-    let reasoning = ''
     let finishReason: string | null = null
     // Tool calls are accumulated by index (streaming sends deltas)
     const toolCallsMap: Map<number, ToolCall> = new Map()
+    // Reasoning details array - must be preserved for function calling with reasoning models
+    let reasoningDetails: any[] = []
+    // Token usage (sent in final chunk)
+    let usage: { prompt_tokens: number; completion_tokens: number; total_tokens: number } | undefined
 
     try {
       while (true) {
@@ -93,13 +93,17 @@ export class OpenRouterClient {
                 finishReason = choice.finish_reason
               }
 
-              // Handle thinking/reasoning chunks (for thinking models like Claude)
-              const reasoningChunk = delta?.reasoning || delta?.reasoning_content
-              if (reasoningChunk) {
-                reasoning += reasoningChunk
-                if (onThinking) {
-                  onThinking(reasoningChunk)
+              // Handle reasoning_details for reasoning models (Gemini, Claude, etc.)
+              if (delta?.reasoning_details) {
+                // Append new reasoning details to the array
+                for (const detail of delta.reasoning_details) {
+                  reasoningDetails.push(detail)
                 }
+              }
+
+              // Capture usage from the response (usually in final chunk)
+              if (parsed.usage) {
+                usage = parsed.usage
               }
 
               // Handle content chunks
@@ -156,6 +160,12 @@ export class OpenRouterClient {
     // Convert tool calls map to array
     const toolCalls = Array.from(toolCallsMap.values())
 
-    return { content, reasoning, toolCalls, finishReason }
+    return {
+      content,
+      toolCalls,
+      finishReason,
+      reasoningDetails: reasoningDetails.length > 0 ? reasoningDetails : undefined,
+      usage
+    }
   }
 }

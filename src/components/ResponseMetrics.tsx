@@ -40,12 +40,8 @@ export function ResponseMetrics({ usage, modelPricing }: ResponseMetricsProps) {
 
   const cost = calculateCost(usage, modelPricing)
   const totalDuration = usage.totalDurationMs || (usage.endTime && usage.startTime ? usage.endTime - usage.startTime : 0)
-  const thinkingDuration = usage.thinkingDurationMs || 0
-  const isSimulated = usage.isSimulatedStreaming
-
-  // For real streaming, show actual speed. For simulated, speed is not meaningful
-  const tokensPerSec = !isSimulated ? (usage.tokensPerSecond || 0) : 0
-  const synthesisDuration = !isSimulated ? (usage.durationMs || 0) : 0
+  const tokensPerSec = usage.tokensPerSecond || 0
+  const synthesisDuration = usage.durationMs || 0
 
   // Estimate response tokens from character count
   const estimatedResponseTokens = usage.responseCharCount ? Math.ceil(usage.responseCharCount / 4) : 0
@@ -76,7 +72,7 @@ export function ResponseMetrics({ usage, modelPricing }: ResponseMetricsProps) {
             {tokensPerSec > 0 ? tokensPerSec.toFixed(1) : '—'}
           </span>
           <span className="text-xs text-text-secondary mt-0.5">
-            {isSimulated ? 'batch response' : 'tokens/sec'}
+            tokens/sec
           </span>
         </div>
 
@@ -86,9 +82,7 @@ export function ResponseMetrics({ usage, modelPricing }: ResponseMetricsProps) {
             {totalDuration > 0 ? formatDuration(totalDuration) : '—'}
           </span>
           <span className="text-xs text-text-secondary mt-0.5">
-            {thinkingDuration > 0
-              ? `${formatDuration(thinkingDuration)} thinking`
-              : synthesisDuration > 0
+            {synthesisDuration > 0
               ? `${formatDuration(synthesisDuration)} streaming`
               : 'end to end'}
           </span>

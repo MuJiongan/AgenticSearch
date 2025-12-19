@@ -12,7 +12,6 @@ export type ResearchQueryParams = {
   openrouterApiKey: string
   parallelApiKey: string
   onToolCall: (call: ToolCall) => void
-  onThinkingChunk: (chunk: string) => void
   onStreamChunk: (chunk: string) => void
   onSourceAdded: (source: Source) => void
   onUsageUpdate: (usage: Partial<UsageMetrics>) => void
@@ -167,26 +166,41 @@ Your goal is to provide thorough, well-researched, and properly cited answers th
       tools: RESEARCH_TOOLS,
       tool_choice: 'auto',
       stream: true,
-      include_reasoning: true,
-      onThinking: params.onThinkingChunk,
       onStream: params.onStreamChunk
     }) as StreamingResult
 
     // If no tool calls, content was already streamed - we're done!
     if (result.toolCalls.length === 0) {
-      params.onUsageUpdate({ isSimulatedStreaming: false })
+      // Pass along usage data from the API response
+      if (result.usage) {
+        params.onUsageUpdate({
+          promptTokens: result.usage.prompt_tokens,
+          completionTokens: result.usage.completion_tokens,
+          totalTokens: result.usage.total_tokens
+        })
+      }
       return
     }
 
+    // Tool calls detected - capture any pre-content and clear the response buffer
+    // The preContent is the model's output before invoking tools (e.g., "I'll search for...")
+    const preContent = result.content?.trim() || undefined
+
+    // Clear the response buffer so final synthesis starts fresh
+    params.onStreamChunk('[[CLEAR_RESPONSE]]')
+
     // Model wants to use tools - add assistant message with tool calls
+    // Include reasoning_details for reasoning models (Gemini, Claude, etc.)
     messages.push({
       role: 'assistant',
       content: result.content || '',
-      tool_calls: result.toolCalls
+      tool_calls: result.toolCalls,
+      reasoning_details: result.reasoningDetails
     })
 
     // Execute each tool call
-    for (const toolCall of result.toolCalls) {
+    for (let i = 0; i < result.toolCalls.length; i++) {
+      const toolCall = result.toolCalls[i]
       const toolName = toolCall.function.name
       if (toolName === 'search_web') {
         params.onProgressMessage('Searching the web...')
@@ -194,7 +208,12 @@ Your goal is to provide thorough, well-researched, and properly cited answers th
         params.onProgressMessage('Reading page content...')
       }
 
-      params.onToolCall({ ...toolCall, status: 'executing' })
+      // Attach preContent only to the first tool call in this batch
+      const toolCallWithPreContent = i === 0 && preContent
+        ? { ...toolCall, status: 'executing' as const, preContent }
+        : { ...toolCall, status: 'executing' as const }
+
+      params.onToolCall(toolCallWithPreContent)
 
       try {
         const toolResult = await executeToolCall(
@@ -209,7 +228,7 @@ Your goal is to provide thorough, well-researched, and properly cited answers th
           content: JSON.stringify(toolResult)
         })
 
-        params.onToolCall({ ...toolCall, status: 'complete' })
+        params.onToolCall({ ...toolCallWithPreContent, status: 'complete' })
       } catch (error: any) {
         messages.push({
           role: 'tool',
@@ -217,7 +236,7 @@ Your goal is to provide thorough, well-researched, and properly cited answers th
           content: JSON.stringify({ error: error.message })
         })
 
-        params.onToolCall({ ...toolCall, status: 'error' })
+        params.onToolCall({ ...toolCallWithPreContent, status: 'error' })
       }
     }
   }

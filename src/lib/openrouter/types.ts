@@ -6,17 +6,22 @@ export type ChatParams = {
   tools?: Tool[]
   tool_choice?: 'auto' | 'required' | 'none'
   stream?: boolean
-  include_reasoning?: boolean  // Request reasoning output for thinking models
   onStream?: (chunk: string) => void
-  onThinking?: (chunk: string) => void
   onToolCalls?: (toolCalls: any[]) => void
 }
 
 export type StreamingResult = {
   content: string
-  reasoning: string
   toolCalls: ToolCall[]
   finishReason: string | null
+  // OpenRouter reasoning details for reasoning models
+  reasoningDetails?: any[]
+  // Token usage from the API
+  usage?: {
+    prompt_tokens: number
+    completion_tokens: number
+    total_tokens: number
+  }
 }
 
 export type ChatResult = OpenRouterChatResponse | StreamingResult
