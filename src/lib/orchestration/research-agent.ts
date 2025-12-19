@@ -148,8 +148,6 @@ Your goal is to provide thorough, well-researched, and properly cited answers th
   ]
 
   let iteration = 0
-
-  let lastResponse: OpenRouterChatResponse | null = null
   let totalPromptTokens = 0
   let totalCompletionTokens = 0
 
@@ -172,7 +170,6 @@ Your goal is to provide thorough, well-researched, and properly cited answers th
       include_reasoning: true  // Request reasoning for thinking models
     }) as OpenRouterChatResponse
 
-    lastResponse = response
     const choice = response.choices[0]
     const finishReason = choice.finish_reason
 
@@ -250,46 +247,20 @@ Your goal is to provide thorough, well-researched, and properly cited answers th
     }
   }
 
-  // Phase 3: Final synthesis with streaming
+  // Phase 3: Final synthesis with real streaming
+  // Always use real streaming for better UX:
+  // - Real-time token display
+  // - Accurate speed metrics
+  // - Thinking traces for reasoning models
   params.onProgressMessage('Synthesizing findings...')
+  params.onUsageUpdate({ isSimulatedStreaming: false })
 
-  // If we have a final response from the non-streaming call, stream it to the UI
-  if (lastResponse && lastResponse.choices[0]?.message?.content) {
-    const message = lastResponse.choices[0].message as any
-    const content = message.content
-
-    // Mark as simulated streaming - response was pre-generated during tool loop
-    params.onUsageUpdate({ isSimulatedStreaming: true })
-
-    // Extract thinking/reasoning from non-streaming response (for thinking models)
-    const reasoning = message.reasoning || message.reasoning_content
-    if (reasoning) {
-      // Stream the thinking content first
-      const thinkingChunkSize = 30
-      for (let i = 0; i < reasoning.length; i += thinkingChunkSize) {
-        params.onThinkingChunk(reasoning.slice(i, i + thinkingChunkSize))
-        await new Promise(resolve => setTimeout(resolve, 2))
-      }
-    }
-
-    // Simulate streaming by chunking the response (fast, just for display)
-    const chunkSize = 20
-    for (let i = 0; i < content.length; i += chunkSize) {
-      params.onStreamChunk(content.slice(i, i + chunkSize))
-      await new Promise(resolve => setTimeout(resolve, 3))
-    }
-  } else {
-    // Real streaming - mark as such
-    params.onUsageUpdate({ isSimulatedStreaming: false })
-
-    // No content in last response, make a new streaming call
-    await client.chat({
-      model: params.model,
-      messages,
-      stream: true,
-      include_reasoning: true,  // Request reasoning for thinking models
-      onThinking: params.onThinkingChunk,
-      onStream: params.onStreamChunk
-    })
-  }
+  await client.chat({
+    model: params.model,
+    messages,
+    stream: true,
+    include_reasoning: true,
+    onThinking: params.onThinkingChunk,
+    onStream: params.onStreamChunk
+  })
 }
