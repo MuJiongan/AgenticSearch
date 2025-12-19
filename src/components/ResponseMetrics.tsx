@@ -14,11 +14,12 @@ function calculateCost(usage: UsageMetrics, modelPricing?: { prompt: string; com
     return null
   }
 
-  const promptPrice = parseFloat(modelPricing.prompt) || 0
-  const completionPrice = parseFloat(modelPricing.completion) || 0
+  // OpenRouter returns pricing in USD per token (e.g., "0.000003" = $0.000003 per token)
+  const promptPricePerToken = parseFloat(modelPricing.prompt) || 0
+  const completionPricePerToken = parseFloat(modelPricing.completion) || 0
 
-  const promptCost = (usage.promptTokens / 1_000_000) * promptPrice
-  const completionCost = (usage.completionTokens / 1_000_000) * completionPrice
+  const promptCost = usage.promptTokens * promptPricePerToken
+  const completionCost = usage.completionTokens * completionPricePerToken
 
   return promptCost + completionCost
 }
