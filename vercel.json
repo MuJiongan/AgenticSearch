@@ -1,0 +1,12 @@
+{
+    "rewrites": [
+        {
+            "source": "/api/openrouter/:path*",
+            "destination": "https://openrouter.ai/:path*"
+        },
+        {
+            "source": "/api/parallel/:path*",
+            "destination": "https://api.parallel.ai/:path*"
+        }
+    ]
+}
