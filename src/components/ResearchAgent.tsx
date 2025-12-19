@@ -7,9 +7,10 @@ import { ToolActivityLog } from './ToolActivityLog.js'
 import { StreamingResponse } from './StreamingResponse.js'
 import { SourceCitations } from './SourceCitations.js'
 import { ThemeToggle } from './ThemeToggle.js'
+import { ResponseMetrics } from './ResponseMetrics.js'
 
 export function ResearchAgent() {
-  const { state, apiKeys, setApiKeys, submitQuery, selectModel, reset } = useResearchAgent()
+  const { state, apiKeys, setApiKeys, submitQuery, selectModel, reset, retry } = useResearchAgent()
 
   const isProcessing = state.status !== 'idle' && state.status !== 'complete' && state.status !== 'error'
   const hasStarted = state.status !== 'idle' || state.currentResponse || state.toolCalls.length > 0
@@ -83,6 +84,8 @@ export function ResearchAgent() {
                 sources={state.sources}
               />
 
+              {state.currentResponse && <ResponseMetrics usage={state.usage} model={state.model} />}
+
               <SourceCitations sources={state.sources} />
 
               {state.status === 'complete' && (
@@ -103,8 +106,8 @@ export function ResearchAgent() {
         )}
 
         {state.error && (
-          <div className="fixed bottom-8 right-8 z-50">
-            <ErrorDisplay error={state.error} onDismiss={reset} />
+          <div className="fixed bottom-8 right-8 z-50 max-w-md">
+            <ErrorDisplay error={state.error} onDismiss={reset} onRetry={retry} />
           </div>
         )}
       </main>

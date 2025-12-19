@@ -1,4 +1,4 @@
-import type { Message, ToolCall, Source, OpenRouterChatResponse } from '../../types/index.js'
+import type { Message, ToolCall, Source, OpenRouterChatResponse, UsageMetrics } from '../../types/index.js'
 import { OpenRouterClient } from '../openrouter/client.js'
 import { RESEARCH_TOOLS } from '../openrouter/tools.js'
 import { executeToolCall } from './tool-executor.js'
@@ -13,6 +13,7 @@ export type ResearchQueryParams = {
   onToolCall: (call: ToolCall) => void
   onStreamChunk: (chunk: string) => void
   onSourceAdded: (source: Source) => void
+  onUsageUpdate: (usage: Partial<UsageMetrics>) => void
 }
 
 export async function executeResearchQuery(params: ResearchQueryParams): Promise<void> {
@@ -147,6 +148,8 @@ Your goal is to provide thorough, well-researched, and properly cited answers th
   let iteration = 0
 
   let lastResponse: OpenRouterChatResponse | null = null
+  let totalPromptTokens = 0
+  let totalCompletionTokens = 0
 
   // Phase 1 & 2: Tool calling loop (non-streaming)
   while (iteration < MAX_ITERATIONS) {
@@ -163,6 +166,17 @@ Your goal is to provide thorough, well-researched, and properly cited answers th
     lastResponse = response
     const choice = response.choices[0]
     const finishReason = choice.finish_reason
+
+    // Accumulate usage data
+    if (response.usage) {
+      totalPromptTokens += response.usage.prompt_tokens || 0
+      totalCompletionTokens += response.usage.completion_tokens || 0
+      params.onUsageUpdate({
+        promptTokens: totalPromptTokens,
+        completionTokens: totalCompletionTokens,
+        totalTokens: totalPromptTokens + totalCompletionTokens
+      })
+    }
 
     // If no tool calls, break out of loop
     if (finishReason !== 'tool_calls' || !choice.message.tool_calls) {

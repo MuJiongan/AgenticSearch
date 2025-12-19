@@ -1,5 +1,5 @@
 import { useReducer } from 'react'
-import type { ResearchState, ToolCall, Source, ApiKeys } from '../types/index.js'
+import type { ResearchState, ToolCall, Source, ApiKeys, UsageMetrics } from '../types/index.js'
 import { executeResearchQuery } from '../lib/orchestration/research-agent.js'
 import { useLocalStorage } from './useLocalStorage.js'
 
@@ -8,6 +8,7 @@ type ResearchAction =
   | { type: 'TOOL_CALL'; payload: ToolCall }
   | { type: 'STREAM_CHUNK'; payload: string }
   | { type: 'SOURCE_ADDED'; payload: Source }
+  | { type: 'UPDATE_USAGE'; payload: Partial<UsageMetrics> }
   | { type: 'COMPLETE' }
   | { type: 'ERROR'; payload: string }
   | { type: 'SET_MODEL'; payload: string }
@@ -23,7 +24,13 @@ function researchReducer(state: ResearchState, action: ResearchAction): Research
         toolCalls: [],
         sources: [],
         error: null,
-        lastQuery: action.payload
+        lastQuery: action.payload,
+        usage: {
+          promptTokens: 0,
+          completionTokens: 0,
+          totalTokens: 0,
+          startTime: Date.now()
+        }
       }
 
     case 'TOOL_CALL': {
@@ -62,8 +69,45 @@ function researchReducer(state: ResearchState, action: ResearchAction): Research
       }
     }
 
-    case 'COMPLETE':
-      return { ...state, status: 'complete' }
+    case 'UPDATE_USAGE': {
+      const newUsage = { ...state.usage, ...action.payload } as UsageMetrics
+
+      // Calculate derived metrics if we have the necessary data
+      if (newUsage.endTime && newUsage.startTime) {
+        newUsage.durationMs = newUsage.endTime - newUsage.startTime
+        if (newUsage.durationMs > 0 && newUsage.totalTokens > 0) {
+          newUsage.tokensPerSecond = (newUsage.totalTokens / newUsage.durationMs) * 1000
+        }
+      }
+
+      return {
+        ...state,
+        usage: newUsage
+      }
+    }
+
+    case 'COMPLETE': {
+      if (!state.usage) {
+        return { ...state, status: 'complete' }
+      }
+
+      const endTime = Date.now()
+      const durationMs = endTime - state.usage.startTime
+      const tokensPerSecond = durationMs > 0 && state.usage.totalTokens > 0
+        ? (state.usage.totalTokens / durationMs) * 1000
+        : 0
+
+      return {
+        ...state,
+        status: 'complete',
+        usage: {
+          ...state.usage,
+          endTime,
+          durationMs,
+          tokensPerSecond
+        }
+      }
+    }
 
     case 'ERROR':
       return { ...state, status: 'error', error: action.payload }
@@ -79,7 +123,8 @@ function researchReducer(state: ResearchState, action: ResearchAction): Research
         toolCalls: [],
         sources: [],
         error: null,
-        lastQuery: null
+        lastQuery: null,
+        usage: undefined
       }
 
     default:
@@ -97,7 +142,8 @@ export function useResearchAgent() {
     toolCalls: [],
     sources: [],
     error: null,
-    lastQuery: null
+    lastQuery: null,
+    usage: undefined
   })
 
   const [apiKeys, setApiKeys] = useLocalStorage<ApiKeys>('research-agent-keys', {
@@ -126,12 +172,19 @@ export function useResearchAgent() {
         onStreamChunk: (chunk) => {
           if (chunk) dispatch({ type: 'STREAM_CHUNK', payload: chunk })
         },
-        onSourceAdded: (source) => dispatch({ type: 'SOURCE_ADDED', payload: source })
+        onSourceAdded: (source) => dispatch({ type: 'SOURCE_ADDED', payload: source }),
+        onUsageUpdate: (usage) => dispatch({ type: 'UPDATE_USAGE', payload: usage })
       })
 
       dispatch({ type: 'COMPLETE' })
     } catch (error: any) {
       dispatch({ type: 'ERROR', payload: error.message || 'An error occurred during research' })
+    }
+  }
+
+  const retry = () => {
+    if (state.lastQuery) {
+      submitQuery(state.lastQuery)
     }
   }
 
@@ -145,6 +198,7 @@ export function useResearchAgent() {
       setSavedModel(model)
       dispatch({ type: 'SET_MODEL', payload: model })
     },
-    reset: () => dispatch({ type: 'RESET' })
+    reset: () => dispatch({ type: 'RESET' }),
+    retry
   }
 }
