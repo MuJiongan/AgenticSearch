@@ -1,5 +1,5 @@
 import { useReducer } from 'react'
-import type { ResearchState, ToolCall, Source, ApiKeys } from '../types/index.js'
+import type { ResearchState, ToolCall, Source, ApiKeys, UsageMetrics } from '../types/index.js'
 import { executeResearchQuery } from '../lib/orchestration/research-agent.js'
 import { useLocalStorage } from './useLocalStorage.js'
 
@@ -8,6 +8,7 @@ type ResearchAction =
   | { type: 'TOOL_CALL'; payload: ToolCall }
   | { type: 'STREAM_CHUNK'; payload: string }
   | { type: 'SOURCE_ADDED'; payload: Source }
+  | { type: 'UPDATE_USAGE'; payload: Partial<UsageMetrics> }
   | { type: 'COMPLETE' }
   | { type: 'ERROR'; payload: string }
   | { type: 'SET_MODEL'; payload: string }
@@ -23,7 +24,13 @@ function researchReducer(state: ResearchState, action: ResearchAction): Research
         toolCalls: [],
         sources: [],
         error: null,
-        lastQuery: action.payload
+        lastQuery: action.payload,
+        usage: {
+          promptTokens: 0,
+          completionTokens: 0,
+          totalTokens: 0,
+          startTime: Date.now()
+        }
       }
 
     case 'TOOL_CALL': {
@@ -43,12 +50,20 @@ function researchReducer(state: ResearchState, action: ResearchAction): Research
       }
     }
 
-    case 'STREAM_CHUNK':
+    case 'STREAM_CHUNK': {
+      // Track when synthesis starts (first chunk)
+      const synthesisStartTime = state.usage?.synthesisStartTime || Date.now()
+
       return {
         ...state,
         status: 'synthesizing',
-        currentResponse: state.currentResponse + action.payload
+        currentResponse: state.currentResponse + action.payload,
+        usage: state.usage ? {
+          ...state.usage,
+          synthesisStartTime
+        } : undefined
       }
+    }
 
     case 'SOURCE_ADDED': {
       // Deduplicate sources by URL
@@ -62,8 +77,51 @@ function researchReducer(state: ResearchState, action: ResearchAction): Research
       }
     }
 
-    case 'COMPLETE':
-      return { ...state, status: 'complete' }
+    case 'UPDATE_USAGE': {
+      const newUsage = { ...state.usage, ...action.payload } as UsageMetrics
+
+      // Calculate derived metrics if we have the necessary data
+      if (newUsage.endTime && newUsage.synthesisStartTime) {
+        newUsage.durationMs = newUsage.endTime - newUsage.synthesisStartTime
+        // Calculate tokens/sec based on completion tokens (output speed)
+        if (newUsage.durationMs > 0 && newUsage.completionTokens > 0) {
+          newUsage.tokensPerSecond = (newUsage.completionTokens / newUsage.durationMs) * 1000
+        }
+      }
+
+      return {
+        ...state,
+        usage: newUsage
+      }
+    }
+
+    case 'COMPLETE': {
+      if (!state.usage) {
+        return { ...state, status: 'complete' }
+      }
+
+      const endTime = Date.now()
+      // Use synthesisStartTime if available (time when response generation started)
+      // Otherwise fall back to startTime (shouldn't happen in normal flow)
+      const synthStartTime = state.usage.synthesisStartTime || state.usage.startTime
+      const durationMs = endTime - synthStartTime
+
+      // Calculate tokens/sec based on completion tokens (output speed)
+      const tokensPerSecond = durationMs > 0 && state.usage.completionTokens > 0
+        ? (state.usage.completionTokens / durationMs) * 1000
+        : 0
+
+      return {
+        ...state,
+        status: 'complete',
+        usage: {
+          ...state.usage,
+          endTime,
+          durationMs,
+          tokensPerSecond
+        }
+      }
+    }
 
     case 'ERROR':
       return { ...state, status: 'error', error: action.payload }
@@ -79,7 +137,8 @@ function researchReducer(state: ResearchState, action: ResearchAction): Research
         toolCalls: [],
         sources: [],
         error: null,
-        lastQuery: null
+        lastQuery: null,
+        usage: undefined
       }
 
     default:
@@ -88,7 +147,7 @@ function researchReducer(state: ResearchState, action: ResearchAction): Research
 }
 
 export function useResearchAgent() {
-  const [savedModel, setSavedModel] = useLocalStorage<string>('research-agent-model', 'anthropic/claude-3.5-sonnet')
+  const [savedModel, setSavedModel] = useLocalStorage<string>('research-agent-model', 'google/gemini-3-flash-preview')
 
   const [state, dispatch] = useReducer(researchReducer, {
     status: 'idle',
@@ -97,7 +156,8 @@ export function useResearchAgent() {
     toolCalls: [],
     sources: [],
     error: null,
-    lastQuery: null
+    lastQuery: null,
+    usage: undefined
   })
 
   const [apiKeys, setApiKeys] = useLocalStorage<ApiKeys>('research-agent-keys', {
@@ -126,12 +186,19 @@ export function useResearchAgent() {
         onStreamChunk: (chunk) => {
           if (chunk) dispatch({ type: 'STREAM_CHUNK', payload: chunk })
         },
-        onSourceAdded: (source) => dispatch({ type: 'SOURCE_ADDED', payload: source })
+        onSourceAdded: (source) => dispatch({ type: 'SOURCE_ADDED', payload: source }),
+        onUsageUpdate: (usage) => dispatch({ type: 'UPDATE_USAGE', payload: usage })
       })
 
       dispatch({ type: 'COMPLETE' })
     } catch (error: any) {
       dispatch({ type: 'ERROR', payload: error.message || 'An error occurred during research' })
+    }
+  }
+
+  const retry = () => {
+    if (state.lastQuery) {
+      submitQuery(state.lastQuery)
     }
   }
 
@@ -145,6 +212,7 @@ export function useResearchAgent() {
       setSavedModel(model)
       dispatch({ type: 'SET_MODEL', payload: model })
     },
-    reset: () => dispatch({ type: 'RESET' })
+    reset: () => dispatch({ type: 'RESET' }),
+    retry
   }
 }

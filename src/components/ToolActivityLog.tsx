@@ -49,8 +49,11 @@ export function ToolActivityLog({ toolCalls }: ToolActivityLogProps) {
           {toolCalls.slice(-3).map((tc, i) => (
             <div
               key={tc.id || i}
-              className={`w-7 h-7 rounded-full ring-2 ring-bg-main flex items-center justify-center bg-gray-50 dark:bg-gray-800 text-text-secondary ${tc.status === 'executing' ? 'bg-brand-primary/10 text-brand-primary ring-brand-primary/30 animate-pulse' : 'opacity-60'
-                }`}
+              className={`w-7 h-7 rounded-full ring-2 ring-bg-main flex items-center justify-center ${
+                tc.status === 'executing'
+                  ? 'bg-brand-primary/10 text-brand-primary ring-brand-primary/30 animate-pulse'
+                  : 'bg-gray-200 dark:bg-gray-800 text-gray-600 dark:text-gray-400 opacity-60'
+              }`}
             >
               {TOOL_ICONS[tc.function.name] || '🔧'}
             </div>
@@ -63,12 +66,17 @@ export function ToolActivityLog({ toolCalls }: ToolActivityLogProps) {
         {toolCalls.slice(-2).map((toolCall, idx) => (
           <div
             key={toolCall.id || idx}
-            className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${toolCall.status === 'executing'
-              ? 'bg-brand-primary/[0.03] border-brand-primary/20 text-text-primary'
-              : 'bg-gray-50/50 dark:bg-gray-800/10 border-border-subtle text-text-secondary opacity-70'
-              }`}
+            className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${
+              toolCall.status === 'executing'
+                ? 'bg-brand-primary/[0.03] border-brand-primary/20 text-text-primary'
+                : 'bg-gray-100/80 dark:bg-gray-800/10 border-border-subtle text-text-secondary opacity-70'
+            }`}
           >
-            <div className={`p-2 rounded-lg ${toolCall.status === 'executing' ? 'bg-brand-primary/10 text-brand-primary' : 'bg-gray-100 dark:bg-gray-800 text-text-secondary'}`}>
+            <div className={`p-2 rounded-lg ${
+              toolCall.status === 'executing'
+                ? 'bg-brand-primary/10 text-brand-primary'
+                : 'bg-gray-200 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
+            }`}>
               {TOOL_ICONS[toolCall.function.name] || '🔧'}
             </div>
             <div className="flex-1 min-w-0">

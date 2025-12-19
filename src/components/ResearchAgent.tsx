@@ -1,4 +1,6 @@
+import { useEffect } from 'react'
 import { useResearchAgent } from '../hooks/useResearchAgent.js'
+import { useOpenRouterModels } from '../hooks/useOpenRouterModels.js'
 import { ApiKeyConfig } from './ApiKeyConfig.js'
 import { ModelSelector } from './ModelSelector.js'
 import { QueryInput } from './QueryInput.js'
@@ -7,12 +9,24 @@ import { ToolActivityLog } from './ToolActivityLog.js'
 import { StreamingResponse } from './StreamingResponse.js'
 import { SourceCitations } from './SourceCitations.js'
 import { ThemeToggle } from './ThemeToggle.js'
+import { ResponseMetrics } from './ResponseMetrics.js'
 
 export function ResearchAgent() {
-  const { state, apiKeys, setApiKeys, submitQuery, selectModel, reset } = useResearchAgent()
+  const { state, apiKeys, setApiKeys, submitQuery, selectModel, reset, retry } = useResearchAgent()
+  const { allModels, fetchModels } = useOpenRouterModels(apiKeys.openrouter)
+
+  // Fetch models on mount to get pricing data
+  useEffect(() => {
+    if (apiKeys.openrouter) {
+      fetchModels()
+    }
+  }, [apiKeys.openrouter, fetchModels])
 
   const isProcessing = state.status !== 'idle' && state.status !== 'complete' && state.status !== 'error'
   const hasStarted = state.status !== 'idle' || state.currentResponse || state.toolCalls.length > 0
+
+  // Get current model's pricing from OpenRouter
+  const currentModelPricing = allModels.find(m => m.id === state.model)?.pricing
 
   return (
     <div className="min-h-screen bg-bg-main text-text-primary selection:bg-brand-primary/20 transition-colors duration-300">
@@ -83,6 +97,8 @@ export function ResearchAgent() {
                 sources={state.sources}
               />
 
+              {state.currentResponse && <ResponseMetrics usage={state.usage} modelPricing={currentModelPricing} />}
+
               <SourceCitations sources={state.sources} />
 
               {state.status === 'complete' && (
@@ -103,8 +119,8 @@ export function ResearchAgent() {
         )}
 
         {state.error && (
-          <div className="fixed bottom-8 right-8 z-50">
-            <ErrorDisplay error={state.error} onDismiss={reset} />
+          <div className="fixed bottom-8 right-8 z-50 max-w-md">
+            <ErrorDisplay error={state.error} onDismiss={reset} onRetry={retry} />
           </div>
         )}
       </main>

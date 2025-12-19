@@ -96,6 +96,18 @@ export type ModelOption = {
 
 export type ResearchStatus = 'idle' | 'searching' | 'synthesizing' | 'complete' | 'error'
 
+export type UsageMetrics = {
+  promptTokens: number
+  completionTokens: number
+  totalTokens: number
+  startTime: number
+  synthesisStartTime?: number
+  endTime?: number
+  durationMs?: number
+  tokensPerSecond?: number
+  estimatedCost?: number
+}
+
 export type ResearchState = {
   status: ResearchStatus
   model: string
@@ -104,6 +116,7 @@ export type ResearchState = {
   sources: Source[]
   error: string | null
   lastQuery: string | null
+  usage?: UsageMetrics
 }
 
 export type ApiKeys = {
