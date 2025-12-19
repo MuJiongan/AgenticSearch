@@ -42,6 +42,7 @@ export function ResponseMetrics({ usage, modelPricing }: ResponseMetricsProps) {
   const tokensPerSec = usage.tokensPerSecond || 0
   const totalDuration = usage.totalDurationMs || (usage.endTime && usage.startTime ? usage.endTime - usage.startTime : 0)
   const synthesisDuration = usage.durationMs || 0
+  const thinkingDuration = usage.thinkingDurationMs || 0
 
   // Estimate response tokens from character count
   const estimatedResponseTokens = usage.responseCharCount ? Math.ceil(usage.responseCharCount / 4) : 0
@@ -80,7 +81,13 @@ export function ResponseMetrics({ usage, modelPricing }: ResponseMetricsProps) {
             {totalDuration > 0 ? formatDuration(totalDuration) : '—'}
           </span>
           <span className="text-xs text-text-secondary mt-0.5">
-            {synthesisDuration > 0 ? `${formatDuration(synthesisDuration)} synthesis` : 'end to end'}
+            {thinkingDuration > 0 && synthesisDuration > 0
+              ? `${formatDuration(thinkingDuration)} thinking, ${formatDuration(synthesisDuration)} output`
+              : thinkingDuration > 0
+              ? `${formatDuration(thinkingDuration)} thinking`
+              : synthesisDuration > 0
+              ? `${formatDuration(synthesisDuration)} output`
+              : 'end to end'}
           </span>
         </div>
 

@@ -6,6 +6,7 @@ import { useLocalStorage } from './useLocalStorage.js'
 type ResearchAction =
   | { type: 'START'; payload: string }
   | { type: 'TOOL_CALL'; payload: ToolCall }
+  | { type: 'THINKING_CHUNK'; payload: string }
   | { type: 'STREAM_CHUNK'; payload: string }
   | { type: 'SOURCE_ADDED'; payload: Source }
   | { type: 'UPDATE_USAGE'; payload: Partial<UsageMetrics> }
@@ -22,6 +23,7 @@ function researchReducer(state: ResearchState, action: ResearchAction): Research
         ...state,
         status: 'searching',
         currentResponse: '',
+        thinkingContent: '',
         toolCalls: [],
         sources: [],
         error: null,
@@ -49,6 +51,24 @@ function researchReducer(state: ResearchState, action: ResearchAction): Research
       return {
         ...state,
         toolCalls: [...state.toolCalls, action.payload]
+      }
+    }
+
+    case 'THINKING_CHUNK': {
+      // Track when thinking starts (first chunk)
+      const thinkingStartTime = state.usage?.thinkingStartTime || Date.now()
+      const newThinking = state.thinkingContent + action.payload
+
+      return {
+        ...state,
+        status: 'thinking',
+        thinkingContent: newThinking,
+        progressMessage: undefined,
+        usage: state.usage ? {
+          ...state.usage,
+          thinkingStartTime,
+          thinkingCharCount: newThinking.length
+        } : undefined
       }
     }
 
@@ -116,11 +136,16 @@ function researchReducer(state: ResearchState, action: ResearchAction): Research
       const durationMs = endTime - synthStartTime
       const totalDurationMs = endTime - state.usage.startTime
 
+      // Calculate thinking duration if thinking occurred
+      const thinkingDurationMs = state.usage.thinkingStartTime && state.usage.synthesisStartTime
+        ? state.usage.synthesisStartTime - state.usage.thinkingStartTime
+        : undefined
+
       // Estimate tokens from response character count (~4 chars per token average)
       const responseCharCount = state.usage.responseCharCount || state.currentResponse.length
       const estimatedResponseTokens = Math.ceil(responseCharCount / 4)
 
-      // Calculate speed based on actual response tokens and synthesis time
+      // Calculate speed based on actual response tokens and synthesis time (excluding thinking)
       const tokensPerSecond = durationMs > 0 && estimatedResponseTokens > 0
         ? (estimatedResponseTokens / durationMs) * 1000
         : 0
@@ -133,6 +158,7 @@ function researchReducer(state: ResearchState, action: ResearchAction): Research
           endTime,
           durationMs,
           totalDurationMs,
+          thinkingDurationMs,
           tokensPerSecond,
           responseCharCount
         }
@@ -150,6 +176,7 @@ function researchReducer(state: ResearchState, action: ResearchAction): Research
         ...state,
         status: 'idle',
         currentResponse: '',
+        thinkingContent: '',
         toolCalls: [],
         sources: [],
         error: null,
@@ -169,6 +196,7 @@ export function useResearchAgent() {
     status: 'idle',
     model: savedModel,
     currentResponse: '',
+    thinkingContent: '',
     toolCalls: [],
     sources: [],
     error: null,
@@ -199,6 +227,9 @@ export function useResearchAgent() {
         openrouterApiKey: apiKeys.openrouter.trim(),
         parallelApiKey: apiKeys.parallel.trim(),
         onToolCall: (call) => dispatch({ type: 'TOOL_CALL', payload: call }),
+        onThinkingChunk: (chunk) => {
+          if (chunk) dispatch({ type: 'THINKING_CHUNK', payload: chunk })
+        },
         onStreamChunk: (chunk) => {
           if (chunk) dispatch({ type: 'STREAM_CHUNK', payload: chunk })
         },

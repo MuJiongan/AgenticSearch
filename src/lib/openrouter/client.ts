@@ -36,12 +36,13 @@ export class OpenRouterClient {
     }
 
     // Handle SSE streaming
-    await this.handleStream(response, params.onStream, params.onToolCalls)
+    await this.handleStream(response, params.onStream, params.onThinking, params.onToolCalls)
   }
 
   private async handleStream(
     response: Response,
     onChunk?: (chunk: string) => void,
+    onThinking?: (chunk: string) => void,
     onToolCalls?: (toolCalls: any[]) => void
   ): Promise<void> {
     const reader = response.body?.getReader()
@@ -76,6 +77,12 @@ export class OpenRouterClient {
               }
 
               const delta = parsed.choices?.[0]?.delta
+
+              // Handle thinking/reasoning chunks (for thinking models like Claude)
+              const reasoning = delta?.reasoning || delta?.reasoning_content
+              if (reasoning && onThinking) {
+                onThinking(reasoning)
+              }
 
               // Handle content chunks
               if (delta?.content && onChunk) {

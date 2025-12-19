@@ -6,6 +6,7 @@ import { ModelSelector } from './ModelSelector.js'
 import { QueryInput } from './QueryInput.js'
 import { ErrorDisplay } from './ErrorDisplay.js'
 import { ToolActivityLog } from './ToolActivityLog.js'
+import { ThinkingDisplay } from './ThinkingDisplay.js'
 import { StreamingResponse } from './StreamingResponse.js'
 import { SourceCitations } from './SourceCitations.js'
 import { ThemeToggle } from './ThemeToggle.js'
@@ -22,7 +23,7 @@ export function ResearchAgent() {
     }
   }, [apiKeys.openrouter, fetchModels])
 
-  const isProcessing = state.status !== 'idle' && state.status !== 'complete' && state.status !== 'error'
+  const isProcessing = state.status === 'searching' || state.status === 'thinking' || state.status === 'synthesizing'
   const hasStarted = state.status !== 'idle' || state.currentResponse || state.toolCalls.length > 0
 
   // Get current model's pricing from OpenRouter
@@ -78,9 +79,19 @@ export function ResearchAgent() {
                   <span className="truncate max-w-[150px] sm:max-w-none">{state.model.split('/')[1] || state.model}</span>
                 </span>
                 {isProcessing && (
-                  <span className="flex items-center gap-2 px-2 sm:px-3 py-1 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-full ring-1 ring-blue-100 dark:ring-blue-900/30">
+                  <span className={`flex items-center gap-2 px-2 sm:px-3 py-1 rounded-full ring-1 ${
+                    state.status === 'thinking'
+                      ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 ring-amber-100 dark:ring-amber-900/30'
+                      : 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 ring-blue-100 dark:ring-blue-900/30'
+                  }`}>
                     <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin flex-shrink-0"></div>
-                    <span className="truncate">{state.progressMessage || (state.status === 'searching' ? 'Researching...' : 'Synthesizing...')}</span>
+                    <span className="truncate">
+                      {state.progressMessage || (
+                        state.status === 'searching' ? 'Researching...' :
+                        state.status === 'thinking' ? 'Thinking...' :
+                        'Synthesizing...'
+                      )}
+                    </span>
                   </span>
                 )}
               </div>
@@ -90,6 +101,11 @@ export function ResearchAgent() {
 
             <div className="grid gap-12">
               <ToolActivityLog toolCalls={state.toolCalls} />
+
+              <ThinkingDisplay
+                content={state.thinkingContent}
+                isThinking={state.status === 'thinking'}
+              />
 
               <StreamingResponse
                 content={state.currentResponse}

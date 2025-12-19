@@ -7,6 +7,7 @@ export type ChatParams = {
   tool_choice?: 'auto' | 'required' | 'none'
   stream?: boolean
   onStream?: (chunk: string) => void
+  onThinking?: (chunk: string) => void
   onToolCalls?: (toolCalls: any[]) => void
 }
 

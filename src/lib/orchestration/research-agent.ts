@@ -11,6 +11,7 @@ export type ResearchQueryParams = {
   openrouterApiKey: string
   parallelApiKey: string
   onToolCall: (call: ToolCall) => void
+  onThinkingChunk: (chunk: string) => void
   onStreamChunk: (chunk: string) => void
   onSourceAdded: (source: Source) => void
   onUsageUpdate: (usage: Partial<UsageMetrics>) => void
@@ -266,6 +267,7 @@ Your goal is to provide thorough, well-researched, and properly cited answers th
       model: params.model,
       messages,
       stream: true,
+      onThinking: params.onThinkingChunk,
       onStream: params.onStreamChunk
     })
   }
