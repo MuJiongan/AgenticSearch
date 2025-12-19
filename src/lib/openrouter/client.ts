@@ -22,7 +22,9 @@ export class OpenRouterClient {
         messages: params.messages,
         tools: params.tools,
         tool_choice: params.tool_choice,
-        stream: params.stream ?? false
+        stream: params.stream ?? false,
+        // Include reasoning for thinking models
+        ...(params.include_reasoning && { include_reasoning: true })
       })
     })
 

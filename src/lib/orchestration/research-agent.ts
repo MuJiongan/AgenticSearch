@@ -168,7 +168,8 @@ Your goal is to provide thorough, well-researched, and properly cited answers th
       messages,
       tools: RESEARCH_TOOLS,
       tool_choice: 'auto',
-      stream: false
+      stream: false,
+      include_reasoning: true  // Request reasoning for thinking models
     }) as OpenRouterChatResponse
 
     lastResponse = response
@@ -254,10 +255,22 @@ Your goal is to provide thorough, well-researched, and properly cited answers th
 
   // If we have a final response from the non-streaming call, stream it to the UI
   if (lastResponse && lastResponse.choices[0]?.message?.content) {
-    const content = lastResponse.choices[0].message.content
+    const message = lastResponse.choices[0].message as any
+    const content = message.content
 
     // Mark as simulated streaming - response was pre-generated during tool loop
     params.onUsageUpdate({ isSimulatedStreaming: true })
+
+    // Extract thinking/reasoning from non-streaming response (for thinking models)
+    const reasoning = message.reasoning || message.reasoning_content
+    if (reasoning) {
+      // Stream the thinking content first
+      const thinkingChunkSize = 30
+      for (let i = 0; i < reasoning.length; i += thinkingChunkSize) {
+        params.onThinkingChunk(reasoning.slice(i, i + thinkingChunkSize))
+        await new Promise(resolve => setTimeout(resolve, 2))
+      }
+    }
 
     // Simulate streaming by chunking the response (fast, just for display)
     const chunkSize = 20
@@ -274,6 +287,7 @@ Your goal is to provide thorough, well-researched, and properly cited answers th
       model: params.model,
       messages,
       stream: true,
+      include_reasoning: true,  // Request reasoning for thinking models
       onThinking: params.onThinkingChunk,
       onStream: params.onStreamChunk
     })
