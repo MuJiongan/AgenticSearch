@@ -27,6 +27,17 @@ body {
   max-width: 100vw;
 }
 
+/* Global overflow handling */
+* {
+  box-sizing: border-box;
+}
+
+/* Ensure all direct children don't overflow */
+body > * {
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
 :root {
   --bg-main: #fcfcfc;
   --bg-card: rgba(255, 255, 255, 0.5);

@@ -116,22 +116,22 @@ export function ModelSelector({ value, onChange, disabled, apiKey }: ModelSelect
   }
 
   return (
-    <div className="px-4 pt-3 border-b border-border-subtle bg-transparent relative" ref={dropdownRef}>
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 text-text-secondary opacity-60">
+    <div className="px-3 sm:px-4 pt-3 border-b border-border-subtle bg-transparent relative" ref={dropdownRef}>
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 text-text-secondary opacity-60 flex-shrink-0">
           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
           </svg>
-          <span className="text-[10px] font-bold uppercase tracking-widest leading-none">Model</span>
+          <span className="text-[10px] font-bold uppercase tracking-widest leading-none hidden sm:inline">Model</span>
         </div>
 
         <button
           onClick={() => !disabled && setIsOpen(!isOpen)}
           disabled={disabled}
-          className="flex items-center gap-1 text-xs font-semibold text-text-primary hover:text-brand-primary transition-colors py-1 disabled:opacity-50"
+          className="flex items-center gap-1 text-xs font-semibold text-text-primary hover:text-brand-primary transition-colors py-1 disabled:opacity-50 min-w-0"
         >
-          <span>{currentModel.name}</span>
-          <svg className={`w-3.5 h-3.5 transition-transform ${isOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <span className="truncate max-w-[180px] sm:max-w-[250px]">{currentModel.name}</span>
+          <svg className={`w-3.5 h-3.5 flex-shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
           </svg>
         </button>

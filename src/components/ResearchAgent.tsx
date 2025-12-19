@@ -30,11 +30,11 @@ export function ResearchAgent() {
         </div>
       </nav>
 
-      <main className="pt-24 pb-32 px-6 sm:px-8 max-w-4xl mx-auto">
+      <main className="pt-20 sm:pt-24 pb-32 px-4 sm:px-6 md:px-8 max-w-4xl mx-auto overflow-x-hidden">
         {!hasStarted ? (
-          <div className="flex flex-col items-center justify-center min-h-[75vh] animate-fade-in-up">
+          <div className="flex flex-col items-center justify-center min-h-[70vh] sm:min-h-[75vh] animate-fade-in-up">
 
-            <h1 className="text-5xl font-bold mb-8 tracking-tight text-center">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-6 sm:mb-8 tracking-tight text-center px-2">
               What do you want to <span className="text-brand-primary">research</span> today?
             </h1>
 
@@ -53,20 +53,20 @@ export function ResearchAgent() {
           </div>
 
         ) : (
-          <div className="space-y-12 animate-fade-in-up">
-            <header className="border-b border-border-subtle pb-8 flex flex-col items-center text-center">
-              <h2 className="text-3xl font-bold mb-4 tracking-tight">
+          <div className="space-y-8 sm:space-y-12 animate-fade-in-up">
+            <header className="border-b border-border-subtle pb-6 sm:pb-8 flex flex-col items-center text-center">
+              <h2 className="text-xl sm:text-2xl md:text-3xl font-bold mb-4 tracking-tight break-words max-w-full px-2">
                 {state.lastQuery || "Research Results"}
               </h2>
-              <div className="flex items-center justify-center gap-4 text-xs font-medium text-text-secondary">
-                <span className="flex items-center gap-1.5 px-3 py-1 bg-brand-primary/10 text-brand-primary rounded-full ring-1 ring-brand-primary/20">
-                  <span className="w-1.5 h-1.5 bg-brand-primary rounded-full animate-pulse"></span>
-                  {state.model.split('/')[1] || state.model}
+              <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-4 text-xs font-medium text-text-secondary px-2">
+                <span className="flex items-center gap-1.5 px-2 sm:px-3 py-1 bg-brand-primary/10 text-brand-primary rounded-full ring-1 ring-brand-primary/20 max-w-full">
+                  <span className="w-1.5 h-1.5 bg-brand-primary rounded-full animate-pulse flex-shrink-0"></span>
+                  <span className="truncate max-w-[150px] sm:max-w-none">{state.model.split('/')[1] || state.model}</span>
                 </span>
                 {isProcessing && (
-                  <span className="flex items-center gap-2 px-3 py-1 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-full ring-1 ring-blue-100 dark:ring-blue-900/30">
-                    <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
-                    {state.status === 'searching' ? 'Researching...' : state.status}...
+                  <span className="flex items-center gap-2 px-2 sm:px-3 py-1 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-full ring-1 ring-blue-100 dark:ring-blue-900/30">
+                    <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin flex-shrink-0"></div>
+                    <span className="truncate">{state.status === 'searching' ? 'Researching...' : state.status}...</span>
                   </span>
                 )}
               </div>
@@ -110,7 +110,7 @@ export function ResearchAgent() {
       </main>
 
       {hasStarted && !isProcessing && (
-        <div className="fixed bottom-0 left-0 right-0 bg-gradient-to-t from-bg-main via-bg-main to-transparent pt-12 pb-8 px-6 sm:px-8 pointer-events-none">
+        <div className="fixed bottom-0 left-0 right-0 bg-gradient-to-t from-bg-main via-bg-main to-transparent pt-8 sm:pt-12 pb-4 sm:pb-8 px-3 sm:px-6 md:px-8 pointer-events-none">
           <div className="max-w-2xl mx-auto glass rounded-2xl p-2 shadow-2xl pointer-events-auto">
             <QueryInput
               onSubmit={submitQuery}

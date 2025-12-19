@@ -25,7 +25,7 @@ export function QueryInput({ onSubmit, disabled }: QueryInputProps) {
 
   return (
     <form onSubmit={handleSubmit} className="relative group">
-      <div className="flex items-end gap-2 p-2 min-h-[56px]">
+      <div className="flex items-end gap-2 p-2 min-h-[52px] sm:min-h-[56px]">
         <textarea
           value={query}
           onChange={(e) => setQuery(e.target.value)}
@@ -33,8 +33,8 @@ export function QueryInput({ onSubmit, disabled }: QueryInputProps) {
           placeholder="Ask anything..."
           disabled={disabled}
           rows={1}
-          className="flex-1 max-h-48 px-4 py-3 bg-transparent border-none focus:ring-0 text-lg resize-none disabled:cursor-not-allowed placeholder:text-text-secondary/50 text-text-primary"
-          style={{ height: 'auto', minHeight: '44px' }}
+          className="flex-1 max-h-48 px-3 sm:px-4 py-2.5 sm:py-3 bg-transparent border-none focus:ring-0 text-base sm:text-lg resize-none disabled:cursor-not-allowed placeholder:text-text-secondary/50 text-text-primary"
+          style={{ height: 'auto', minHeight: '40px' }}
         />
         <button
           type="submit"

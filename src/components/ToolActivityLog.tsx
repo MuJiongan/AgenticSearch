@@ -43,9 +43,9 @@ export function ToolActivityLog({ toolCalls }: ToolActivityLogProps) {
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 overflow-hidden">
       <div className="flex items-center gap-3 text-text-secondary mb-2">
-        <div className="flex -space-x-2">
+        <div className="flex -space-x-2 flex-shrink-0">
           {toolCalls.slice(-3).map((tc, i) => (
             <div
               key={tc.id || i}
@@ -56,7 +56,7 @@ export function ToolActivityLog({ toolCalls }: ToolActivityLogProps) {
             </div>
           ))}
         </div>
-        <span className="text-xs font-semibold uppercase tracking-wider opacity-60">Researching Process</span>
+        <span className="text-xs font-semibold uppercase tracking-wider opacity-60 truncate">Researching Process</span>
       </div>
 
       <div className="space-y-2">
