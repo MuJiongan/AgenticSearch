@@ -50,12 +50,20 @@ function researchReducer(state: ResearchState, action: ResearchAction): Research
       }
     }
 
-    case 'STREAM_CHUNK':
+    case 'STREAM_CHUNK': {
+      // Track when synthesis starts (first chunk)
+      const synthesisStartTime = state.usage?.synthesisStartTime || Date.now()
+
       return {
         ...state,
         status: 'synthesizing',
-        currentResponse: state.currentResponse + action.payload
+        currentResponse: state.currentResponse + action.payload,
+        usage: state.usage ? {
+          ...state.usage,
+          synthesisStartTime
+        } : undefined
       }
+    }
 
     case 'SOURCE_ADDED': {
       // Deduplicate sources by URL
@@ -73,8 +81,8 @@ function researchReducer(state: ResearchState, action: ResearchAction): Research
       const newUsage = { ...state.usage, ...action.payload } as UsageMetrics
 
       // Calculate derived metrics if we have the necessary data
-      if (newUsage.endTime && newUsage.startTime) {
-        newUsage.durationMs = newUsage.endTime - newUsage.startTime
+      if (newUsage.endTime && newUsage.synthesisStartTime) {
+        newUsage.durationMs = newUsage.endTime - newUsage.synthesisStartTime
         // Calculate tokens/sec based on completion tokens (output speed)
         if (newUsage.durationMs > 0 && newUsage.completionTokens > 0) {
           newUsage.tokensPerSecond = (newUsage.completionTokens / newUsage.durationMs) * 1000
@@ -93,7 +101,11 @@ function researchReducer(state: ResearchState, action: ResearchAction): Research
       }
 
       const endTime = Date.now()
-      const durationMs = endTime - state.usage.startTime
+      // Use synthesisStartTime if available (time when response generation started)
+      // Otherwise fall back to startTime (shouldn't happen in normal flow)
+      const synthStartTime = state.usage.synthesisStartTime || state.usage.startTime
+      const durationMs = endTime - synthStartTime
+
       // Calculate tokens/sec based on completion tokens (output speed)
       const tokensPerSecond = durationMs > 0 && state.usage.completionTokens > 0
         ? (state.usage.completionTokens / durationMs) * 1000

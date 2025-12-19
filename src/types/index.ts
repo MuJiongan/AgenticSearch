@@ -101,6 +101,7 @@ export type UsageMetrics = {
   completionTokens: number
   totalTokens: number
   startTime: number
+  synthesisStartTime?: number
   endTime?: number
   durationMs?: number
   tokensPerSecond?: number
