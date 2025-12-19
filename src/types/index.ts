@@ -117,6 +117,7 @@ export type ResearchState = {
   error: string | null
   lastQuery: string | null
   usage?: UsageMetrics
+  progressMessage?: string
 }
 
 export type ApiKeys = {

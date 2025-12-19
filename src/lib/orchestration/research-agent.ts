@@ -14,6 +14,7 @@ export type ResearchQueryParams = {
   onStreamChunk: (chunk: string) => void
   onSourceAdded: (source: Source) => void
   onUsageUpdate: (usage: Partial<UsageMetrics>) => void
+  onProgressMessage: (message: string) => void
 }
 
 export async function executeResearchQuery(params: ResearchQueryParams): Promise<void> {
@@ -155,6 +156,12 @@ Your goal is to provide thorough, well-researched, and properly cited answers th
   while (iteration < MAX_ITERATIONS) {
     iteration++
 
+    if (iteration === 1) {
+      params.onProgressMessage('Analyzing your query...')
+    } else {
+      params.onProgressMessage('Analyzing search results...')
+    }
+
     const response = await client.chat({
       model: params.model,
       messages,
@@ -190,6 +197,14 @@ Your goal is to provide thorough, well-researched, and properly cited answers th
     // Execute each tool call
     const toolCalls = choice.message.tool_calls
     for (const toolCall of toolCalls) {
+      // Update progress message based on tool type
+      const toolName = toolCall.function.name
+      if (toolName === 'search_web') {
+        params.onProgressMessage('Searching the web...')
+      } else if (toolName === 'extract_url') {
+        params.onProgressMessage('Reading page content...')
+      }
+
       // Notify UI that tool is executing
       params.onToolCall({
         ...toolCall,
@@ -234,14 +249,16 @@ Your goal is to provide thorough, well-researched, and properly cited answers th
   }
 
   // Phase 3: Final synthesis with streaming
+  params.onProgressMessage('Synthesizing findings...')
+
   // If we have a final response from the non-streaming call, stream it to the UI
   if (lastResponse && lastResponse.choices[0]?.message?.content) {
     const content = lastResponse.choices[0].message.content
     // Simulate streaming by chunking the response
-    const chunkSize = 10
+    const chunkSize = 15
     for (let i = 0; i < content.length; i += chunkSize) {
       params.onStreamChunk(content.slice(i, i + chunkSize))
-      await new Promise(resolve => setTimeout(resolve, 20))
+      await new Promise(resolve => setTimeout(resolve, 5))
     }
   } else {
     // No content in last response, make a new streaming call

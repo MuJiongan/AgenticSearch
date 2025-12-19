@@ -9,6 +9,7 @@ type ResearchAction =
   | { type: 'STREAM_CHUNK'; payload: string }
   | { type: 'SOURCE_ADDED'; payload: Source }
   | { type: 'UPDATE_USAGE'; payload: Partial<UsageMetrics> }
+  | { type: 'PROGRESS_MESSAGE'; payload: string }
   | { type: 'COMPLETE' }
   | { type: 'ERROR'; payload: string }
   | { type: 'SET_MODEL'; payload: string }
@@ -25,6 +26,7 @@ function researchReducer(state: ResearchState, action: ResearchAction): Research
         sources: [],
         error: null,
         lastQuery: action.payload,
+        progressMessage: 'Planning research strategy...',
         usage: {
           promptTokens: 0,
           completionTokens: 0,
@@ -58,6 +60,7 @@ function researchReducer(state: ResearchState, action: ResearchAction): Research
         ...state,
         status: 'synthesizing',
         currentResponse: state.currentResponse + action.payload,
+        progressMessage: undefined,
         usage: state.usage ? {
           ...state.usage,
           synthesisStartTime
@@ -94,6 +97,12 @@ function researchReducer(state: ResearchState, action: ResearchAction): Research
         usage: newUsage
       }
     }
+
+    case 'PROGRESS_MESSAGE':
+      return {
+        ...state,
+        progressMessage: action.payload
+      }
 
     case 'COMPLETE': {
       if (!state.usage) {
@@ -187,7 +196,8 @@ export function useResearchAgent() {
           if (chunk) dispatch({ type: 'STREAM_CHUNK', payload: chunk })
         },
         onSourceAdded: (source) => dispatch({ type: 'SOURCE_ADDED', payload: source }),
-        onUsageUpdate: (usage) => dispatch({ type: 'UPDATE_USAGE', payload: usage })
+        onUsageUpdate: (usage) => dispatch({ type: 'UPDATE_USAGE', payload: usage }),
+        onProgressMessage: (message) => dispatch({ type: 'PROGRESS_MESSAGE', payload: message })
       })
 
       dispatch({ type: 'COMPLETE' })

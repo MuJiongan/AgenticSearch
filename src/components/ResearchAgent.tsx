@@ -80,7 +80,7 @@ export function ResearchAgent() {
                 {isProcessing && (
                   <span className="flex items-center gap-2 px-2 sm:px-3 py-1 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-full ring-1 ring-blue-100 dark:ring-blue-900/30">
                     <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin flex-shrink-0"></div>
-                    <span className="truncate">{state.status === 'searching' ? 'Researching...' : state.status}...</span>
+                    <span className="truncate">{state.progressMessage || (state.status === 'searching' ? 'Researching...' : 'Synthesizing...')}</span>
                   </span>
                 )}
               </div>
