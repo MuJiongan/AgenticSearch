@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { useResearchAgent } from '../hooks/useResearchAgent.js'
 import { useOpenRouterModels } from '../hooks/useOpenRouterModels.js'
 import { ApiKeyConfig } from './ApiKeyConfig.js'
@@ -12,7 +13,14 @@ import { ResponseMetrics } from './ResponseMetrics.js'
 
 export function ResearchAgent() {
   const { state, apiKeys, setApiKeys, submitQuery, selectModel, reset, retry } = useResearchAgent()
-  const { allModels } = useOpenRouterModels(apiKeys.openrouter)
+  const { allModels, fetchModels } = useOpenRouterModels(apiKeys.openrouter)
+
+  // Fetch models on mount to get pricing data
+  useEffect(() => {
+    if (apiKeys.openrouter) {
+      fetchModels()
+    }
+  }, [apiKeys.openrouter, fetchModels])
 
   const isProcessing = state.status !== 'idle' && state.status !== 'complete' && state.status !== 'error'
   const hasStarted = state.status !== 'idle' || state.currentResponse || state.toolCalls.length > 0
