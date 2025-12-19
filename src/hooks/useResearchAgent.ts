@@ -6,9 +6,11 @@ import { useLocalStorage } from './useLocalStorage.js'
 type ResearchAction =
   | { type: 'START'; payload: string }
   | { type: 'TOOL_CALL'; payload: ToolCall }
+  | { type: 'THINKING_CHUNK'; payload: string }
   | { type: 'STREAM_CHUNK'; payload: string }
   | { type: 'SOURCE_ADDED'; payload: Source }
   | { type: 'UPDATE_USAGE'; payload: Partial<UsageMetrics> }
+  | { type: 'PROGRESS_MESSAGE'; payload: string }
   | { type: 'COMPLETE' }
   | { type: 'ERROR'; payload: string }
   | { type: 'SET_MODEL'; payload: string }
@@ -25,6 +27,7 @@ function researchReducer(state: ResearchState, action: ResearchAction): Research
         sources: [],
         error: null,
         lastQuery: action.payload,
+        progressMessage: 'Planning research strategy...',
         usage: {
           promptTokens: 0,
           completionTokens: 0,
@@ -50,17 +53,35 @@ function researchReducer(state: ResearchState, action: ResearchAction): Research
       }
     }
 
+
     case 'STREAM_CHUNK': {
+      // Special marker to clear response buffer when tool calls are detected
+      // This prevents pre-tool-call content from appearing in final response
+      if (action.payload.includes('CLEAR_RESPONSE')) {
+        return {
+          ...state,
+          currentResponse: '',
+          usage: state.usage ? {
+            ...state.usage,
+            synthesisStartTime: undefined,
+            responseCharCount: 0
+          } : undefined
+        }
+      }
+
       // Track when synthesis starts (first chunk)
       const synthesisStartTime = state.usage?.synthesisStartTime || Date.now()
+      const newResponse = state.currentResponse + action.payload
 
       return {
         ...state,
         status: 'synthesizing',
-        currentResponse: state.currentResponse + action.payload,
+        currentResponse: newResponse,
+        progressMessage: undefined,
         usage: state.usage ? {
           ...state.usage,
-          synthesisStartTime
+          synthesisStartTime,
+          responseCharCount: newResponse.length
         } : undefined
       }
     }
@@ -95,20 +116,29 @@ function researchReducer(state: ResearchState, action: ResearchAction): Research
       }
     }
 
+    case 'PROGRESS_MESSAGE':
+      return {
+        ...state,
+        progressMessage: action.payload
+      }
+
     case 'COMPLETE': {
       if (!state.usage) {
         return { ...state, status: 'complete' }
       }
 
       const endTime = Date.now()
-      // Use synthesisStartTime if available (time when response generation started)
-      // Otherwise fall back to startTime (shouldn't happen in normal flow)
       const synthStartTime = state.usage.synthesisStartTime || state.usage.startTime
       const durationMs = endTime - synthStartTime
+      const totalDurationMs = endTime - state.usage.startTime
 
-      // Calculate tokens/sec based on completion tokens (output speed)
-      const tokensPerSecond = durationMs > 0 && state.usage.completionTokens > 0
-        ? (state.usage.completionTokens / durationMs) * 1000
+      // Estimate tokens from response character count (~4 chars per token average)
+      const responseCharCount = state.usage.responseCharCount || state.currentResponse.length
+      const estimatedResponseTokens = Math.ceil(responseCharCount / 4)
+
+      // Calculate speed based on actual response tokens and synthesis time
+      const tokensPerSecond = durationMs > 0 && estimatedResponseTokens > 0
+        ? (estimatedResponseTokens / durationMs) * 1000
         : 0
 
       return {
@@ -118,7 +148,9 @@ function researchReducer(state: ResearchState, action: ResearchAction): Research
           ...state.usage,
           endTime,
           durationMs,
-          tokensPerSecond
+          totalDurationMs,
+          tokensPerSecond,
+          responseCharCount
         }
       }
     }
@@ -187,7 +219,8 @@ export function useResearchAgent() {
           if (chunk) dispatch({ type: 'STREAM_CHUNK', payload: chunk })
         },
         onSourceAdded: (source) => dispatch({ type: 'SOURCE_ADDED', payload: source }),
-        onUsageUpdate: (usage) => dispatch({ type: 'UPDATE_USAGE', payload: usage })
+        onUsageUpdate: (usage) => dispatch({ type: 'UPDATE_USAGE', payload: usage }),
+        onProgressMessage: (message) => dispatch({ type: 'PROGRESS_MESSAGE', payload: message })
       })
 
       dispatch({ type: 'COMPLETE' })

@@ -18,6 +18,9 @@ export function StreamingResponse({ content, status, sources }: StreamingRespons
     return null
   }
 
+  // Show thinking indicator when synthesizing but no content yet
+  const isThinking = status === 'synthesizing' && !content
+
   const isStreaming = status === 'synthesizing'
 
   // Detect if user prefers dark mode
@@ -66,6 +69,17 @@ export function StreamingResponse({ content, status, sources }: StreamingRespons
           </button>
         )}
       </div>
+
+      {isThinking && (
+        <div className="flex items-center gap-3 py-6">
+          <div className="flex gap-1">
+            <span className="w-2 h-2 bg-brand-primary rounded-full animate-bounce [animation-delay:-0.3s]"></span>
+            <span className="w-2 h-2 bg-brand-primary rounded-full animate-bounce [animation-delay:-0.15s]"></span>
+            <span className="w-2 h-2 bg-brand-primary rounded-full animate-bounce"></span>
+          </div>
+          <span className="text-sm text-text-secondary font-medium">Generating response...</span>
+        </div>
+      )}
 
       <div className="prose max-w-none">
         <ReactMarkdown

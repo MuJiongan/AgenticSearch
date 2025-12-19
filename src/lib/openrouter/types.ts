@@ -1,4 +1,4 @@
-import type { Message, Tool, OpenRouterChatResponse } from '../../types/index.js'
+import type { Message, Tool, ToolCall, OpenRouterChatResponse } from '../../types/index.js'
 
 export type ChatParams = {
   model: string
@@ -10,4 +10,18 @@ export type ChatParams = {
   onToolCalls?: (toolCalls: any[]) => void
 }
 
-export type ChatResult = OpenRouterChatResponse | void
+export type StreamingResult = {
+  content: string
+  toolCalls: ToolCall[]
+  finishReason: string | null
+  // OpenRouter reasoning details for reasoning models
+  reasoningDetails?: any[]
+  // Token usage from the API
+  usage?: {
+    prompt_tokens: number
+    completion_tokens: number
+    total_tokens: number
+  }
+}
+
+export type ChatResult = OpenRouterChatResponse | StreamingResult

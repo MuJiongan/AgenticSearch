@@ -1,7 +1,8 @@
-import type { Message, ToolCall, Source, OpenRouterChatResponse, UsageMetrics } from '../../types/index.js'
+import type { Message, ToolCall, Source, UsageMetrics } from '../../types/index.js'
 import { OpenRouterClient } from '../openrouter/client.js'
 import { RESEARCH_TOOLS } from '../openrouter/tools.js'
 import { executeToolCall } from './tool-executor.js'
+import type { StreamingResult } from '../openrouter/types.js'
 
 const MAX_ITERATIONS = 50
 
@@ -14,6 +15,7 @@ export type ResearchQueryParams = {
   onStreamChunk: (chunk: string) => void
   onSourceAdded: (source: Source) => void
   onUsageUpdate: (usage: Partial<UsageMetrics>) => void
+  onProgressMessage: (message: string) => void
 }
 
 export async function executeResearchQuery(params: ResearchQueryParams): Promise<void> {
@@ -147,109 +149,95 @@ Your goal is to provide thorough, well-researched, and properly cited answers th
 
   let iteration = 0
 
-  let lastResponse: OpenRouterChatResponse | null = null
-  let totalPromptTokens = 0
-  let totalCompletionTokens = 0
-
-  // Phase 1 & 2: Tool calling loop (non-streaming)
+  // Research loop: streaming for all calls, handle tool calls or content
   while (iteration < MAX_ITERATIONS) {
     iteration++
 
-    const response = await client.chat({
+    if (iteration === 1) {
+      params.onProgressMessage('Analyzing your query...')
+    } else {
+      params.onProgressMessage('Analyzing search results...')
+    }
+
+    // Single streaming call - handles both tool calls and final response
+    const result = await client.chat({
       model: params.model,
       messages,
       tools: RESEARCH_TOOLS,
       tool_choice: 'auto',
-      stream: false
-    }) as OpenRouterChatResponse
+      stream: true,
+      onStream: params.onStreamChunk
+    }) as StreamingResult
 
-    lastResponse = response
-    const choice = response.choices[0]
-    const finishReason = choice.finish_reason
-
-    // Accumulate usage data
-    if (response.usage) {
-      totalPromptTokens += response.usage.prompt_tokens || 0
-      totalCompletionTokens += response.usage.completion_tokens || 0
-      params.onUsageUpdate({
-        promptTokens: totalPromptTokens,
-        completionTokens: totalCompletionTokens,
-        totalTokens: totalPromptTokens + totalCompletionTokens
-      })
+    // If no tool calls, content was already streamed - we're done!
+    if (result.toolCalls.length === 0) {
+      // Pass along usage data from the API response
+      if (result.usage) {
+        params.onUsageUpdate({
+          promptTokens: result.usage.prompt_tokens,
+          completionTokens: result.usage.completion_tokens,
+          totalTokens: result.usage.total_tokens
+        })
+      }
+      return
     }
 
-    // If no tool calls, break out of loop
-    if (finishReason !== 'tool_calls' || !choice.message.tool_calls) {
-      // Don't add message yet - we'll stream it
-      break
-    }
+    // Tool calls detected - capture any pre-content and clear the response buffer
+    // The preContent is the model's output before invoking tools (e.g., "I'll search for...")
+    const preContent = result.content?.trim() || undefined
 
-    // Add assistant's tool call message to conversation
-    messages.push(choice.message)
+    // Clear the response buffer so final synthesis starts fresh
+    params.onStreamChunk('[[CLEAR_RESPONSE]]')
+
+    // Model wants to use tools - add assistant message with tool calls
+    // Include reasoning_details for reasoning models (Gemini, Claude, etc.)
+    messages.push({
+      role: 'assistant',
+      content: result.content || '',
+      tool_calls: result.toolCalls,
+      reasoning_details: result.reasoningDetails
+    })
 
     // Execute each tool call
-    const toolCalls = choice.message.tool_calls
-    for (const toolCall of toolCalls) {
-      // Notify UI that tool is executing
-      params.onToolCall({
-        ...toolCall,
-        status: 'executing'
-      })
+    for (let i = 0; i < result.toolCalls.length; i++) {
+      const toolCall = result.toolCalls[i]
+      const toolName = toolCall.function.name
+      if (toolName === 'search_web') {
+        params.onProgressMessage('Searching the web...')
+      } else if (toolName === 'extract_url') {
+        params.onProgressMessage('Reading page content...')
+      }
+
+      // Attach preContent only to the first tool call in this batch
+      const toolCallWithPreContent = i === 0 && preContent
+        ? { ...toolCall, status: 'executing' as const, preContent }
+        : { ...toolCall, status: 'executing' as const }
+
+      params.onToolCall(toolCallWithPreContent)
 
       try {
-        // Execute the tool call
-        const result = await executeToolCall(
+        const toolResult = await executeToolCall(
           toolCall,
           params.parallelApiKey,
           params.onSourceAdded
         )
 
-        // Add tool result to messages
         messages.push({
           role: 'tool',
           tool_call_id: toolCall.id,
-          content: JSON.stringify(result)
+          content: JSON.stringify(toolResult)
         })
 
-        // Notify UI that tool completed
-        params.onToolCall({
-          ...toolCall,
-          status: 'complete'
-        })
+        params.onToolCall({ ...toolCallWithPreContent, status: 'complete' })
       } catch (error: any) {
-        // Add error as tool result
         messages.push({
           role: 'tool',
           tool_call_id: toolCall.id,
           content: JSON.stringify({ error: error.message })
         })
 
-        // Notify UI of error
-        params.onToolCall({
-          ...toolCall,
-          status: 'error'
-        })
+        params.onToolCall({ ...toolCallWithPreContent, status: 'error' })
       }
     }
-  }
-
-  // Phase 3: Final synthesis with streaming
-  // If we have a final response from the non-streaming call, stream it to the UI
-  if (lastResponse && lastResponse.choices[0]?.message?.content) {
-    const content = lastResponse.choices[0].message.content
-    // Simulate streaming by chunking the response
-    const chunkSize = 10
-    for (let i = 0; i < content.length; i += chunkSize) {
-      params.onStreamChunk(content.slice(i, i + chunkSize))
-      await new Promise(resolve => setTimeout(resolve, 20))
-    }
-  } else {
-    // No content in last response, make a new streaming call
-    await client.chat({
-      model: params.model,
-      messages,
-      stream: true,
-      onStream: params.onStreamChunk
-    })
   }
 }
