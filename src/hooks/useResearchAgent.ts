@@ -133,7 +133,7 @@ function researchReducer(state: ResearchState, action: ResearchAction): Research
 }
 
 export function useResearchAgent() {
-  const [savedModel, setSavedModel] = useLocalStorage<string>('research-agent-model', 'anthropic/claude-3.5-sonnet')
+  const [savedModel, setSavedModel] = useLocalStorage<string>('research-agent-model', 'google/gemini-3-flash-preview')
 
   const [state, dispatch] = useReducer(researchReducer, {
     status: 'idle',
