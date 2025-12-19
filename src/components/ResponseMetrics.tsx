@@ -9,36 +9,14 @@ type ResponseMetricsProps = {
   }
 }
 
-// Fallback pricing (per million tokens) - only used if OpenRouter pricing unavailable
-// These should be updated with actual pricing from OpenRouter
-const FALLBACK_PRICING: Record<string, { prompt: number; completion: number }> = {
-  'anthropic/claude-3.5-sonnet': { prompt: 3.0, completion: 15.0 },
-  'anthropic/claude-3-opus': { prompt: 15.0, completion: 75.0 },
-  'anthropic/claude-3-sonnet': { prompt: 3.0, completion: 15.0 },
-  'anthropic/claude-3-haiku': { prompt: 0.25, completion: 1.25 },
-  'google/gemini-2.0-flash-exp:free': { prompt: 0, completion: 0 },
-  'google/gemini-pro': { prompt: 0.5, completion: 1.5 },
-  'google/gemini-pro-1.5': { prompt: 1.25, completion: 5.0 },
-  'openai/gpt-4o': { prompt: 2.5, completion: 10.0 },
-  'openai/gpt-4o-mini': { prompt: 0.15, completion: 0.6 },
-  'openai/gpt-4-turbo': { prompt: 10.0, completion: 30.0 },
-  'openai/gpt-3.5-turbo': { prompt: 0.5, completion: 1.5 },
-}
-
-function calculateCost(usage: UsageMetrics, model: string, modelPricing?: { prompt: string; completion: string }): number {
-  let promptPrice = 0
-  let completionPrice = 0
-
-  // Try to use OpenRouter pricing first
-  if (modelPricing) {
-    promptPrice = parseFloat(modelPricing.prompt) || 0
-    completionPrice = parseFloat(modelPricing.completion) || 0
-  } else {
-    // Fall back to hardcoded pricing
-    const fallback = FALLBACK_PRICING[model] || { prompt: 0, completion: 0 }
-    promptPrice = fallback.prompt
-    completionPrice = fallback.completion
+function calculateCost(usage: UsageMetrics, modelPricing?: { prompt: string; completion: string }): number | null {
+  // Only calculate cost if pricing is available
+  if (!modelPricing) {
+    return null
   }
+
+  const promptPrice = parseFloat(modelPricing.prompt) || 0
+  const completionPrice = parseFloat(modelPricing.completion) || 0
 
   const promptCost = (usage.promptTokens / 1_000_000) * promptPrice
   const completionCost = (usage.completionTokens / 1_000_000) * completionPrice
@@ -60,7 +38,7 @@ export function ResponseMetrics({ usage, model, modelPricing }: ResponseMetricsP
     return null
   }
 
-  const cost = calculateCost(usage, model, modelPricing)
+  const cost = calculateCost(usage, modelPricing)
   const tokensPerSec = usage.tokensPerSecond || 0
   const duration = usage.durationMs || (usage.endTime && usage.startTime ? usage.endTime - usage.startTime : 0)
 
@@ -103,9 +81,11 @@ export function ResponseMetrics({ usage, model, modelPricing }: ResponseMetricsP
         <div className="flex flex-col">
           <span className="text-xs text-text-secondary mb-1">Estimated Cost</span>
           <span className="text-lg font-semibold text-brand-primary">
-            ${cost > 0 ? cost.toFixed(4) : '0.00'}
+            {cost !== null ? `$${cost.toFixed(4)}` : '—'}
           </span>
-          <span className="text-xs text-text-secondary mt-0.5">USD</span>
+          <span className="text-xs text-text-secondary mt-0.5">
+            {cost !== null ? 'USD' : 'unavailable'}
+          </span>
         </div>
       </div>
     </div>
