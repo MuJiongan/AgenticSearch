@@ -255,13 +255,20 @@ Your goal is to provide thorough, well-researched, and properly cited answers th
   // If we have a final response from the non-streaming call, stream it to the UI
   if (lastResponse && lastResponse.choices[0]?.message?.content) {
     const content = lastResponse.choices[0].message.content
-    // Simulate streaming by chunking the response
-    const chunkSize = 15
+
+    // Mark as simulated streaming - response was pre-generated during tool loop
+    params.onUsageUpdate({ isSimulatedStreaming: true })
+
+    // Simulate streaming by chunking the response (fast, just for display)
+    const chunkSize = 20
     for (let i = 0; i < content.length; i += chunkSize) {
       params.onStreamChunk(content.slice(i, i + chunkSize))
-      await new Promise(resolve => setTimeout(resolve, 5))
+      await new Promise(resolve => setTimeout(resolve, 3))
     }
   } else {
+    // Real streaming - mark as such
+    params.onUsageUpdate({ isSimulatedStreaming: false })
+
     // No content in last response, make a new streaming call
     await client.chat({
       model: params.model,

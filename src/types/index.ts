@@ -110,6 +110,7 @@ export type UsageMetrics = {
   tokensPerSecond?: number      // Based on actual response tokens
   responseCharCount?: number    // Character count for accurate speed calc
   thinkingCharCount?: number    // Character count for thinking
+  isSimulatedStreaming?: boolean // True if response was pre-generated (not real streaming)
   estimatedCost?: number
 }
 
