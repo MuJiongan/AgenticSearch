@@ -1,0 +1,183 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap');
+
+@theme {
+  --color-brand-primary: #10a37f;
+  --color-brand-secondary: #054a49;
+
+  --color-bg-main: var(--bg-main);
+  --color-bg-card: var(--bg-card);
+  --color-bg-nav: var(--bg-nav);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-border-subtle: var(--border-subtle);
+
+  --font-sans: 'Outfit', 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  /* Custom shadows defined here to avoid space-parsing issues in @apply */
+  --shadow-glass: 0 8px 32px 0 rgba(0, 0, 0, 0.05);
+  --shadow-glass-dark: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+}
+
+/* Prevent horizontal scroll on the page */
+html,
+body {
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
+:root {
+  --bg-main: #fcfcfc;
+  --bg-card: rgba(255, 255, 255, 0.5);
+  --bg-nav: rgba(255, 255, 255, 0.8);
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --border-subtle: #f1f5f9;
+
+  background-color: var(--bg-main);
+  color: var(--text-primary);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.dark {
+  --bg-main: #0a0a0a;
+  --bg-card: rgba(23, 23, 23, 0.5);
+  --bg-nav: rgba(10, 10, 10, 0.8);
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --border-subtle: #1e293b;
+}
+
+/* Custom styles for prose (markdown) */
+.prose {
+  @apply text-text-secondary leading-relaxed max-w-none;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+.prose p {
+  @apply mb-5;
+}
+
+.prose h1 {
+  @apply text-text-primary text-3xl font-bold mb-6 mt-8 tracking-tight;
+}
+
+.prose h2 {
+  @apply text-text-primary text-2xl font-bold mb-4 mt-8 tracking-tight;
+}
+
+.prose h3 {
+  @apply text-text-primary text-xl font-bold mb-3 mt-6;
+}
+
+.prose ul,
+.prose ol {
+  @apply mb-6 ml-6 space-y-2;
+}
+
+.prose li {
+  @apply mb-1;
+}
+
+.prose a {
+  @apply text-brand-primary hover:underline font-medium;
+}
+
+.prose code {
+  @apply bg-gray-100/80 px-1.5 py-0.5 rounded text-sm font-mono text-pink-600;
+}
+
+.dark .prose code {
+  @apply bg-gray-800/80 text-pink-400;
+}
+
+.prose pre {
+  @apply mb-6 rounded-xl overflow-x-auto shadow-sm border border-border-subtle;
+  max-width: 100%;
+}
+
+.prose blockquote {
+  @apply border-l-4 border-brand-primary/30 pl-6 italic my-6 text-text-secondary;
+}
+
+.prose table {
+  @apply w-full border-collapse mb-6 text-sm;
+  display: block;
+  overflow-x: auto;
+}
+
+.prose th,
+.prose td {
+  @apply border-b border-border-subtle px-4 py-3 text-left;
+}
+
+.prose th {
+  @apply bg-gray-50/50 font-semibold;
+}
+
+.dark .prose th {
+  @apply bg-gray-900/50;
+}
+
+/* Glassmorphism utility */
+.glass {
+  @apply bg-bg-card backdrop-blur-md border border-white/10 shadow-glass;
+}
+
+.dark .glass {
+  @apply border-white/5 shadow-glass-dark;
+}
+
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-gray-200 rounded-full hover:bg-gray-300 transition-colors;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  @apply bg-gray-800 hover:bg-gray-700;
+}
+
+/* Animation for typing cursor */
+@keyframes blink {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0;
+  }
+}
+
+.animate-blink {
+  animation: blink 1s infinite;
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.5s ease-out forwards;
+}

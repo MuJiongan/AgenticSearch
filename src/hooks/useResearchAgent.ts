@@ -1,0 +1,150 @@
+import { useReducer } from 'react'
+import type { ResearchState, ToolCall, Source, ApiKeys } from '../types/index.js'
+import { executeResearchQuery } from '../lib/orchestration/research-agent.js'
+import { useLocalStorage } from './useLocalStorage.js'
+
+type ResearchAction =
+  | { type: 'START'; payload: string }
+  | { type: 'TOOL_CALL'; payload: ToolCall }
+  | { type: 'STREAM_CHUNK'; payload: string }
+  | { type: 'SOURCE_ADDED'; payload: Source }
+  | { type: 'COMPLETE' }
+  | { type: 'ERROR'; payload: string }
+  | { type: 'SET_MODEL'; payload: string }
+  | { type: 'RESET' }
+
+function researchReducer(state: ResearchState, action: ResearchAction): ResearchState {
+  switch (action.type) {
+    case 'START':
+      return {
+        ...state,
+        status: 'searching',
+        currentResponse: '',
+        toolCalls: [],
+        sources: [],
+        error: null,
+        lastQuery: action.payload
+      }
+
+    case 'TOOL_CALL': {
+      // Update existing tool call or add new one
+      const existingIndex = state.toolCalls.findIndex(tc => tc.id === action.payload.id)
+      if (existingIndex >= 0) {
+        const newToolCalls = [...state.toolCalls]
+        newToolCalls[existingIndex] = action.payload
+        return {
+          ...state,
+          toolCalls: newToolCalls
+        }
+      }
+      return {
+        ...state,
+        toolCalls: [...state.toolCalls, action.payload]
+      }
+    }
+
+    case 'STREAM_CHUNK':
+      return {
+        ...state,
+        status: 'synthesizing',
+        currentResponse: state.currentResponse + action.payload
+      }
+
+    case 'SOURCE_ADDED': {
+      // Deduplicate sources by URL
+      const exists = state.sources.some(s => s.url === action.payload.url)
+      if (exists) {
+        return state
+      }
+      return {
+        ...state,
+        sources: [...state.sources, action.payload]
+      }
+    }
+
+    case 'COMPLETE':
+      return { ...state, status: 'complete' }
+
+    case 'ERROR':
+      return { ...state, status: 'error', error: action.payload }
+
+    case 'SET_MODEL':
+      return { ...state, model: action.payload }
+
+    case 'RESET':
+      return {
+        ...state,
+        status: 'idle',
+        currentResponse: '',
+        toolCalls: [],
+        sources: [],
+        error: null,
+        lastQuery: null
+      }
+
+    default:
+      return state
+  }
+}
+
+export function useResearchAgent() {
+  const [savedModel, setSavedModel] = useLocalStorage<string>('research-agent-model', 'anthropic/claude-3.5-sonnet')
+
+  const [state, dispatch] = useReducer(researchReducer, {
+    status: 'idle',
+    model: savedModel,
+    currentResponse: '',
+    toolCalls: [],
+    sources: [],
+    error: null,
+    lastQuery: null
+  })
+
+  const [apiKeys, setApiKeys] = useLocalStorage<ApiKeys>('research-agent-keys', {
+    openrouter: '',
+    parallel: ''
+  })
+
+  const submitQuery = async (query: string) => {
+    const trimmedQuery = query.trim()
+    if (!trimmedQuery) return
+
+    if (!apiKeys.openrouter?.trim() || !apiKeys.parallel?.trim()) {
+      dispatch({ type: 'ERROR', payload: 'API keys not configured. Please add your OpenRouter and Parallel API keys.' })
+      return
+    }
+
+    dispatch({ type: 'START', payload: trimmedQuery })
+
+    try {
+      await executeResearchQuery({
+        query: trimmedQuery,
+        model: state.model,
+        openrouterApiKey: apiKeys.openrouter.trim(),
+        parallelApiKey: apiKeys.parallel.trim(),
+        onToolCall: (call) => dispatch({ type: 'TOOL_CALL', payload: call }),
+        onStreamChunk: (chunk) => {
+          if (chunk) dispatch({ type: 'STREAM_CHUNK', payload: chunk })
+        },
+        onSourceAdded: (source) => dispatch({ type: 'SOURCE_ADDED', payload: source })
+      })
+
+      dispatch({ type: 'COMPLETE' })
+    } catch (error: any) {
+      dispatch({ type: 'ERROR', payload: error.message || 'An error occurred during research' })
+    }
+  }
+
+  return {
+    state,
+    apiKeys,
+    setApiKeys,
+    submitQuery,
+    selectModel: (model: string) => {
+      if (!model) return
+      setSavedModel(model)
+      dispatch({ type: 'SET_MODEL', payload: model })
+    },
+    reset: () => dispatch({ type: 'RESET' })
+  }
+}
