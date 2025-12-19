@@ -75,8 +75,9 @@ function researchReducer(state: ResearchState, action: ResearchAction): Research
       // Calculate derived metrics if we have the necessary data
       if (newUsage.endTime && newUsage.startTime) {
         newUsage.durationMs = newUsage.endTime - newUsage.startTime
-        if (newUsage.durationMs > 0 && newUsage.totalTokens > 0) {
-          newUsage.tokensPerSecond = (newUsage.totalTokens / newUsage.durationMs) * 1000
+        // Calculate tokens/sec based on completion tokens (output speed)
+        if (newUsage.durationMs > 0 && newUsage.completionTokens > 0) {
+          newUsage.tokensPerSecond = (newUsage.completionTokens / newUsage.durationMs) * 1000
         }
       }
 
@@ -93,8 +94,9 @@ function researchReducer(state: ResearchState, action: ResearchAction): Research
 
       const endTime = Date.now()
       const durationMs = endTime - state.usage.startTime
-      const tokensPerSecond = durationMs > 0 && state.usage.totalTokens > 0
-        ? (state.usage.totalTokens / durationMs) * 1000
+      // Calculate tokens/sec based on completion tokens (output speed)
+      const tokensPerSecond = durationMs > 0 && state.usage.completionTokens > 0
+        ? (state.usage.completionTokens / durationMs) * 1000
         : 0
 
       return {
