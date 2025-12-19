@@ -3,11 +3,15 @@ import type { UsageMetrics } from '../types/index.js'
 type ResponseMetricsProps = {
   usage?: UsageMetrics
   model: string
+  modelPricing?: {
+    prompt: string
+    completion: string
+  }
 }
 
-// OpenRouter pricing (per million tokens) - approximate values
+// Fallback pricing (per million tokens) - only used if OpenRouter pricing unavailable
 // These should be updated with actual pricing from OpenRouter
-const MODEL_PRICING: Record<string, { prompt: number; completion: number }> = {
+const FALLBACK_PRICING: Record<string, { prompt: number; completion: number }> = {
   'anthropic/claude-3.5-sonnet': { prompt: 3.0, completion: 15.0 },
   'anthropic/claude-3-opus': { prompt: 15.0, completion: 75.0 },
   'anthropic/claude-3-sonnet': { prompt: 3.0, completion: 15.0 },
@@ -21,11 +25,23 @@ const MODEL_PRICING: Record<string, { prompt: number; completion: number }> = {
   'openai/gpt-3.5-turbo': { prompt: 0.5, completion: 1.5 },
 }
 
-function calculateCost(usage: UsageMetrics, model: string): number {
-  const pricing = MODEL_PRICING[model] || { prompt: 0, completion: 0 }
+function calculateCost(usage: UsageMetrics, model: string, modelPricing?: { prompt: string; completion: string }): number {
+  let promptPrice = 0
+  let completionPrice = 0
 
-  const promptCost = (usage.promptTokens / 1_000_000) * pricing.prompt
-  const completionCost = (usage.completionTokens / 1_000_000) * pricing.completion
+  // Try to use OpenRouter pricing first
+  if (modelPricing) {
+    promptPrice = parseFloat(modelPricing.prompt) || 0
+    completionPrice = parseFloat(modelPricing.completion) || 0
+  } else {
+    // Fall back to hardcoded pricing
+    const fallback = FALLBACK_PRICING[model] || { prompt: 0, completion: 0 }
+    promptPrice = fallback.prompt
+    completionPrice = fallback.completion
+  }
+
+  const promptCost = (usage.promptTokens / 1_000_000) * promptPrice
+  const completionCost = (usage.completionTokens / 1_000_000) * completionPrice
 
   return promptCost + completionCost
 }
@@ -39,12 +55,12 @@ function formatDuration(ms: number): string {
   return `${minutes}m ${remainingSeconds}s`
 }
 
-export function ResponseMetrics({ usage, model }: ResponseMetricsProps) {
+export function ResponseMetrics({ usage, model, modelPricing }: ResponseMetricsProps) {
   if (!usage || !usage.totalTokens) {
     return null
   }
 
-  const cost = calculateCost(usage, model)
+  const cost = calculateCost(usage, model, modelPricing)
   const tokensPerSec = usage.tokensPerSecond || 0
   const duration = usage.durationMs || (usage.endTime && usage.startTime ? usage.endTime - usage.startTime : 0)
 
