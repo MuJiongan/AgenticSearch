@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import ReactMarkdown from 'react-markdown'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
-import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism'
+import { vscDarkPlus, vs } from 'react-syntax-highlighter/dist/esm/styles/prism'
 import remarkGfm from 'remark-gfm'
 import type { ResearchStatus, Source } from '../types/index.js'
 
@@ -19,6 +19,9 @@ export function StreamingResponse({ content, status, sources }: StreamingRespons
   }
 
   const isStreaming = status === 'synthesizing'
+
+  // Detect if user prefers dark mode
+  const isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
 
   const copyToClipboard = async () => {
     try {
@@ -104,17 +107,17 @@ export function StreamingResponse({ content, status, sources }: StreamingRespons
               return !inline && match ? (
                 <div className="relative group overflow-x-auto max-w-full">
                   <div className="absolute right-4 top-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button className="p-1.5 bg-white/10 hover:bg-white/20 rounded text-white/50 hover:text-white transition-colors">
+                    <button className="p-1.5 bg-black/10 dark:bg-white/10 hover:bg-black/20 dark:hover:bg-white/20 rounded text-gray-600 dark:text-white/50 hover:text-gray-900 dark:hover:text-white transition-colors">
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                       </svg>
                     </button>
                   </div>
                   <SyntaxHighlighter
-                    style={vscDarkPlus}
+                    style={isDarkMode ? vscDarkPlus : vs}
                     language={match[1]}
                     PreTag="div"
-                    className="!my-0 !bg-slate-900 rounded-xl !p-6"
+                    className={`!my-0 rounded-xl !p-6 ${isDarkMode ? '!bg-slate-900' : '!bg-gray-50'}`}
                     {...props}
                   >
                     {String(children).replace(/\n$/, '')}
