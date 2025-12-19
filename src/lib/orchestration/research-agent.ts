@@ -1,7 +1,8 @@
-import type { Message, ToolCall, Source, OpenRouterChatResponse, UsageMetrics } from '../../types/index.js'
+import type { Message, ToolCall, Source, UsageMetrics } from '../../types/index.js'
 import { OpenRouterClient } from '../openrouter/client.js'
 import { RESEARCH_TOOLS } from '../openrouter/tools.js'
 import { executeToolCall } from './tool-executor.js'
+import type { StreamingResult } from '../openrouter/types.js'
 
 const MAX_ITERATIONS = 50
 
@@ -148,10 +149,8 @@ Your goal is to provide thorough, well-researched, and properly cited answers th
   ]
 
   let iteration = 0
-  let totalPromptTokens = 0
-  let totalCompletionTokens = 0
 
-  // Phase 1 & 2: Tool calling loop (non-streaming)
+  // Research loop: streaming for all calls, handle tool calls or content
   while (iteration < MAX_ITERATIONS) {
     iteration++
 
@@ -161,42 +160,33 @@ Your goal is to provide thorough, well-researched, and properly cited answers th
       params.onProgressMessage('Analyzing search results...')
     }
 
-    const response = await client.chat({
+    // Single streaming call - handles both tool calls and final response
+    const result = await client.chat({
       model: params.model,
       messages,
       tools: RESEARCH_TOOLS,
       tool_choice: 'auto',
-      stream: false,
-      include_reasoning: true  // Request reasoning for thinking models
-    }) as OpenRouterChatResponse
+      stream: true,
+      include_reasoning: true,
+      onThinking: params.onThinkingChunk,
+      onStream: params.onStreamChunk
+    }) as StreamingResult
 
-    const choice = response.choices[0]
-    const finishReason = choice.finish_reason
-
-    // Accumulate usage data
-    if (response.usage) {
-      totalPromptTokens += response.usage.prompt_tokens || 0
-      totalCompletionTokens += response.usage.completion_tokens || 0
-      params.onUsageUpdate({
-        promptTokens: totalPromptTokens,
-        completionTokens: totalCompletionTokens,
-        totalTokens: totalPromptTokens + totalCompletionTokens
-      })
+    // If no tool calls, content was already streamed - we're done!
+    if (result.toolCalls.length === 0) {
+      params.onUsageUpdate({ isSimulatedStreaming: false })
+      return
     }
 
-    // If no tool calls, break out of loop
-    if (finishReason !== 'tool_calls' || !choice.message.tool_calls) {
-      // Don't add message yet - we'll stream it
-      break
-    }
-
-    // Add assistant's tool call message to conversation
-    messages.push(choice.message)
+    // Model wants to use tools - add assistant message with tool calls
+    messages.push({
+      role: 'assistant',
+      content: result.content || '',
+      tool_calls: result.toolCalls
+    })
 
     // Execute each tool call
-    const toolCalls = choice.message.tool_calls
-    for (const toolCall of toolCalls) {
-      // Update progress message based on tool type
+    for (const toolCall of result.toolCalls) {
       const toolName = toolCall.function.name
       if (toolName === 'search_web') {
         params.onProgressMessage('Searching the web...')
@@ -204,63 +194,31 @@ Your goal is to provide thorough, well-researched, and properly cited answers th
         params.onProgressMessage('Reading page content...')
       }
 
-      // Notify UI that tool is executing
-      params.onToolCall({
-        ...toolCall,
-        status: 'executing'
-      })
+      params.onToolCall({ ...toolCall, status: 'executing' })
 
       try {
-        // Execute the tool call
-        const result = await executeToolCall(
+        const toolResult = await executeToolCall(
           toolCall,
           params.parallelApiKey,
           params.onSourceAdded
         )
 
-        // Add tool result to messages
         messages.push({
           role: 'tool',
           tool_call_id: toolCall.id,
-          content: JSON.stringify(result)
+          content: JSON.stringify(toolResult)
         })
 
-        // Notify UI that tool completed
-        params.onToolCall({
-          ...toolCall,
-          status: 'complete'
-        })
+        params.onToolCall({ ...toolCall, status: 'complete' })
       } catch (error: any) {
-        // Add error as tool result
         messages.push({
           role: 'tool',
           tool_call_id: toolCall.id,
           content: JSON.stringify({ error: error.message })
         })
 
-        // Notify UI of error
-        params.onToolCall({
-          ...toolCall,
-          status: 'error'
-        })
+        params.onToolCall({ ...toolCall, status: 'error' })
       }
     }
   }
-
-  // Phase 3: Final synthesis with real streaming
-  // Always use real streaming for better UX:
-  // - Real-time token display
-  // - Accurate speed metrics
-  // - Thinking traces for reasoning models
-  params.onProgressMessage('Synthesizing findings...')
-  params.onUsageUpdate({ isSimulatedStreaming: false })
-
-  await client.chat({
-    model: params.model,
-    messages,
-    stream: true,
-    include_reasoning: true,
-    onThinking: params.onThinkingChunk,
-    onStream: params.onStreamChunk
-  })
 }

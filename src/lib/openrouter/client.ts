@@ -1,5 +1,5 @@
-import type { OpenRouterChatResponse } from '../../types/index.js'
-import type { ChatParams, ChatResult } from './types.js'
+import type { OpenRouterChatResponse, ToolCall } from '../../types/index.js'
+import type { ChatParams, ChatResult, StreamingResult } from './types.js'
 
 export class OpenRouterClient {
   private apiKey: string
@@ -37,8 +37,8 @@ export class OpenRouterClient {
       return response.json() as Promise<OpenRouterChatResponse>
     }
 
-    // Handle SSE streaming
-    await this.handleStream(response, params.onStream, params.onThinking, params.onToolCalls)
+    // Handle SSE streaming and return accumulated result
+    return this.handleStream(response, params.onStream, params.onThinking, params.onToolCalls)
   }
 
   private async handleStream(
@@ -46,7 +46,7 @@ export class OpenRouterClient {
     onChunk?: (chunk: string) => void,
     onThinking?: (chunk: string) => void,
     onToolCalls?: (toolCalls: any[]) => void
-  ): Promise<void> {
+  ): Promise<StreamingResult> {
     const reader = response.body?.getReader()
     if (!reader) {
       throw new Error('Response body is not readable')
@@ -54,6 +54,13 @@ export class OpenRouterClient {
 
     const decoder = new TextDecoder()
     let buffer = ''
+
+    // Accumulate data for final result
+    let content = ''
+    let reasoning = ''
+    let finishReason: string | null = null
+    // Tool calls are accumulated by index (streaming sends deltas)
+    const toolCallsMap: Map<number, ToolCall> = new Map()
 
     try {
       while (true) {
@@ -78,22 +85,58 @@ export class OpenRouterClient {
                 throw new Error(`Provider error: ${parsed.error.message} (Code: ${parsed.error.code})`)
               }
 
-              const delta = parsed.choices?.[0]?.delta
+              const choice = parsed.choices?.[0]
+              const delta = choice?.delta
+
+              // Capture finish reason
+              if (choice?.finish_reason) {
+                finishReason = choice.finish_reason
+              }
 
               // Handle thinking/reasoning chunks (for thinking models like Claude)
-              const reasoning = delta?.reasoning || delta?.reasoning_content
-              if (reasoning && onThinking) {
-                onThinking(reasoning)
+              const reasoningChunk = delta?.reasoning || delta?.reasoning_content
+              if (reasoningChunk) {
+                reasoning += reasoningChunk
+                if (onThinking) {
+                  onThinking(reasoningChunk)
+                }
               }
 
               // Handle content chunks
-              if (delta?.content && onChunk) {
-                onChunk(delta.content)
+              if (delta?.content) {
+                content += delta.content
+                if (onChunk) {
+                  onChunk(delta.content)
+                }
               }
 
-              // Handle tool calls
-              if (delta?.tool_calls && onToolCalls) {
-                onToolCalls(delta.tool_calls)
+              // Handle tool calls - accumulate by index
+              if (delta?.tool_calls) {
+                for (const tc of delta.tool_calls) {
+                  const index = tc.index ?? 0
+                  const existing = toolCallsMap.get(index)
+
+                  if (existing) {
+                    // Append to existing tool call arguments
+                    if (tc.function?.arguments) {
+                      existing.function.arguments += tc.function.arguments
+                    }
+                  } else {
+                    // New tool call
+                    toolCallsMap.set(index, {
+                      id: tc.id || `call_${index}`,
+                      type: 'function',
+                      function: {
+                        name: tc.function?.name || '',
+                        arguments: tc.function?.arguments || ''
+                      }
+                    })
+                  }
+                }
+
+                if (onToolCalls) {
+                  onToolCalls(delta.tool_calls)
+                }
               }
             } catch (e: any) {
               // If it's the error we just threw, rethrow it
@@ -109,5 +152,10 @@ export class OpenRouterClient {
     } finally {
       reader.releaseLock()
     }
+
+    // Convert tool calls map to array
+    const toolCalls = Array.from(toolCallsMap.values())
+
+    return { content, reasoning, toolCalls, finishReason }
   }
 }

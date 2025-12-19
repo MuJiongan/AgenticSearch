@@ -1,4 +1,4 @@
-import type { Message, Tool, OpenRouterChatResponse } from '../../types/index.js'
+import type { Message, Tool, ToolCall, OpenRouterChatResponse } from '../../types/index.js'
 
 export type ChatParams = {
   model: string
@@ -12,4 +12,11 @@ export type ChatParams = {
   onToolCalls?: (toolCalls: any[]) => void
 }
 
-export type ChatResult = OpenRouterChatResponse | void
+export type StreamingResult = {
+  content: string
+  reasoning: string
+  toolCalls: ToolCall[]
+  finishReason: string | null
+}
+
+export type ChatResult = OpenRouterChatResponse | StreamingResult
