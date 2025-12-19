@@ -55,15 +55,17 @@ function researchReducer(state: ResearchState, action: ResearchAction): Research
     case 'STREAM_CHUNK': {
       // Track when synthesis starts (first chunk)
       const synthesisStartTime = state.usage?.synthesisStartTime || Date.now()
+      const newResponse = state.currentResponse + action.payload
 
       return {
         ...state,
         status: 'synthesizing',
-        currentResponse: state.currentResponse + action.payload,
+        currentResponse: newResponse,
         progressMessage: undefined,
         usage: state.usage ? {
           ...state.usage,
-          synthesisStartTime
+          synthesisStartTime,
+          responseCharCount: newResponse.length
         } : undefined
       }
     }
@@ -110,14 +112,17 @@ function researchReducer(state: ResearchState, action: ResearchAction): Research
       }
 
       const endTime = Date.now()
-      // Use synthesisStartTime if available (time when response generation started)
-      // Otherwise fall back to startTime (shouldn't happen in normal flow)
       const synthStartTime = state.usage.synthesisStartTime || state.usage.startTime
       const durationMs = endTime - synthStartTime
+      const totalDurationMs = endTime - state.usage.startTime
 
-      // Calculate tokens/sec based on completion tokens (output speed)
-      const tokensPerSecond = durationMs > 0 && state.usage.completionTokens > 0
-        ? (state.usage.completionTokens / durationMs) * 1000
+      // Estimate tokens from response character count (~4 chars per token average)
+      const responseCharCount = state.usage.responseCharCount || state.currentResponse.length
+      const estimatedResponseTokens = Math.ceil(responseCharCount / 4)
+
+      // Calculate speed based on actual response tokens and synthesis time
+      const tokensPerSecond = durationMs > 0 && estimatedResponseTokens > 0
+        ? (estimatedResponseTokens / durationMs) * 1000
         : 0
 
       return {
@@ -127,7 +132,9 @@ function researchReducer(state: ResearchState, action: ResearchAction): Research
           ...state.usage,
           endTime,
           durationMs,
-          tokensPerSecond
+          totalDurationMs,
+          tokensPerSecond,
+          responseCharCount
         }
       }
     }

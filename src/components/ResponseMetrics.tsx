@@ -40,7 +40,11 @@ export function ResponseMetrics({ usage, modelPricing }: ResponseMetricsProps) {
 
   const cost = calculateCost(usage, modelPricing)
   const tokensPerSec = usage.tokensPerSecond || 0
-  const duration = usage.durationMs || (usage.endTime && usage.startTime ? usage.endTime - usage.startTime : 0)
+  const totalDuration = usage.totalDurationMs || (usage.endTime && usage.startTime ? usage.endTime - usage.startTime : 0)
+  const synthesisDuration = usage.durationMs || 0
+
+  // Estimate response tokens from character count
+  const estimatedResponseTokens = usage.responseCharCount ? Math.ceil(usage.responseCharCount / 4) : 0
 
   return (
     <div className="mt-6 p-4 bg-bg-nav border border-border-subtle rounded-xl">
@@ -58,12 +62,12 @@ export function ResponseMetrics({ usage, modelPricing }: ResponseMetricsProps) {
             {usage.totalTokens.toLocaleString()}
           </span>
           <span className="text-xs text-text-secondary mt-0.5">
-            {usage.promptTokens.toLocaleString()} prompt + {usage.completionTokens.toLocaleString()} completion
+            {estimatedResponseTokens > 0 ? `~${estimatedResponseTokens.toLocaleString()} in response` : `${usage.completionTokens.toLocaleString()} completion`}
           </span>
         </div>
 
         <div className="flex flex-col">
-          <span className="text-xs text-text-secondary mb-1">Speed</span>
+          <span className="text-xs text-text-secondary mb-1">Output Speed</span>
           <span className="text-lg font-semibold text-text-primary">
             {tokensPerSec > 0 ? tokensPerSec.toFixed(1) : '—'}
           </span>
@@ -71,11 +75,13 @@ export function ResponseMetrics({ usage, modelPricing }: ResponseMetricsProps) {
         </div>
 
         <div className="flex flex-col">
-          <span className="text-xs text-text-secondary mb-1">Duration</span>
+          <span className="text-xs text-text-secondary mb-1">Total Time</span>
           <span className="text-lg font-semibold text-text-primary">
-            {duration > 0 ? formatDuration(duration) : '—'}
+            {totalDuration > 0 ? formatDuration(totalDuration) : '—'}
           </span>
-          <span className="text-xs text-text-secondary mt-0.5">total time</span>
+          <span className="text-xs text-text-secondary mt-0.5">
+            {synthesisDuration > 0 ? `${formatDuration(synthesisDuration)} synthesis` : 'end to end'}
+          </span>
         </div>
 
         <div className="flex flex-col">

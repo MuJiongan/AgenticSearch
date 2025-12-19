@@ -103,8 +103,10 @@ export type UsageMetrics = {
   startTime: number
   synthesisStartTime?: number
   endTime?: number
-  durationMs?: number
-  tokensPerSecond?: number
+  durationMs?: number           // Synthesis duration only
+  totalDurationMs?: number      // Total time from start to finish
+  tokensPerSecond?: number      // Based on actual response tokens
+  responseCharCount?: number    // Character count for accurate speed calc
   estimatedCost?: number
 }
 
