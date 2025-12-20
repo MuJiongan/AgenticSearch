@@ -1,6 +1,19 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { useOpenRouterModels, type CustomModel, type OpenRouterModel } from '../hooks/useOpenRouterModels.js'
 
+// Format pricing from $/token to readable format (e.g., "$2.50/M")
+function formatPricing(pricePerToken: string | undefined): string | null {
+  if (!pricePerToken) return null
+  const price = parseFloat(pricePerToken)
+  if (isNaN(price) || price === 0) return 'Free'
+  // Convert to price per million tokens
+  const pricePerMillion = price * 1_000_000
+  if (pricePerMillion < 0.01) return '<$0.01/M'
+  if (pricePerMillion < 1) return `$${pricePerMillion.toFixed(2)}/M`
+  if (pricePerMillion < 10) return `$${pricePerMillion.toFixed(1)}/M`
+  return `$${Math.round(pricePerMillion)}/M`
+}
+
 type ModelSelectorProps = {
   value: string
   onChange: (model: string) => void
@@ -27,11 +40,16 @@ export function ModelSelector({ value, onChange, disabled, apiKey }: ModelSelect
 
   // Combine all models: custom (saved) + OpenRouter (fetched)
   const allSelectableModels = useMemo(() => {
-    const customModelsList = customModels.map((cm: CustomModel) => ({
-      ...cm,
-      provider: cm.id.split('/')[0] || 'custom',
-      source: 'custom' as const
-    }))
+    // For custom models, try to find pricing from allModels
+    const customModelsList = customModels.map((cm: CustomModel) => {
+      const openRouterModel = allModels.find((m: OpenRouterModel) => m.id === cm.id)
+      return {
+        ...cm,
+        provider: cm.id.split('/')[0] || 'custom',
+        source: 'custom' as const,
+        pricing: openRouterModel?.pricing
+      }
+    })
 
     const openRouterModels = allModels
       .filter((m: OpenRouterModel) => !customModels.some((cm: CustomModel) => cm.id === m.id))
@@ -39,7 +57,8 @@ export function ModelSelector({ value, onChange, disabled, apiKey }: ModelSelect
         id: m.id,
         name: m.name,
         provider: m.id.split('/')[0],
-        source: 'openrouter' as const
+        source: 'openrouter' as const,
+        pricing: m.pricing
       }))
 
     return [...customModelsList, ...openRouterModels]
@@ -194,6 +213,8 @@ export function ModelSelector({ value, onChange, disabled, apiKey }: ModelSelect
             {filteredModels.map((model) => {
               const isSelected = model.id === value
               const isSaved = model.source === 'custom'
+              const inputPrice = formatPricing(model.pricing?.prompt)
+              const outputPrice = formatPricing(model.pricing?.completion)
 
               return (
                 <div
@@ -214,6 +235,11 @@ export function ModelSelector({ value, onChange, disabled, apiKey }: ModelSelect
                       )}
                     </div>
                     <div className="text-xs text-text-secondary truncate">{model.id}</div>
+                    {inputPrice && outputPrice && (
+                      <div className="text-[10px] text-text-secondary/70 mt-0.5">
+                        {inputPrice} in / {outputPrice} out
+                      </div>
+                    )}
                   </div>
                   <div className="flex items-center gap-2 ml-2">
                     {isSaved && (
