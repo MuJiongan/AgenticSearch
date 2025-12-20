@@ -206,15 +206,22 @@ body>* {
   @apply border-l-4 border-brand-primary/30 pl-6 italic my-6 text-text-secondary;
 }
 
-.prose table {
-  @apply w-full border-collapse mb-6 text-sm;
-  display: block;
+/* Table wrapper for horizontal scrolling on mobile */
+.prose .table-wrapper {
+  @apply mb-6 -mx-4 px-4;
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.prose table {
+  @apply w-full border-collapse text-sm;
+  min-width: 500px;
 }
 
 .prose th,
 .prose td {
   @apply border-b border-border-subtle px-4 py-3 text-left;
+  white-space: nowrap;
 }
 
 .prose th {

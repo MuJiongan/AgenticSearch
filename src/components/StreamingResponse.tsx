@@ -199,6 +199,13 @@ export function StreamingResponse({ content, status, sources }: StreamingRespons
                 </a>
               )
             },
+            table({ node, children, ...props }: any) {
+              return (
+                <div className="table-wrapper">
+                  <table {...props}>{children}</table>
+                </div>
+              )
+            },
             code({ node, inline, className, children, ...props }: any) {
               const match = /language-(\w+)/.exec(className || '')
               return !inline && match ? (
