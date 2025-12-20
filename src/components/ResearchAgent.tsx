@@ -31,7 +31,7 @@ export function ResearchAgent() {
   return (
     <div className="min-h-screen bg-bg-main text-text-primary selection:bg-brand-primary/20 transition-colors duration-300">
       {/* Top Navigation */}
-      <nav className="fixed top-0 left-0 right-0 h-16 border-b border-border-subtle bg-bg-nav backdrop-blur-md z-50 flex items-center justify-between px-6 transition-colors duration-300">
+      <nav className="fixed top-0 left-0 right-0 h-16 border-b border-border-subtle bg-bg-nav backdrop-blur-md z-50 flex items-center justify-between px-4 sm:px-6 transition-colors duration-300 safe-top safe-x">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 bg-brand-primary rounded-lg flex items-center justify-center text-white font-bold text-xl">
             A
@@ -107,10 +107,10 @@ export function ResearchAgent() {
               <SourceCitations sources={state.sources} />
 
               {state.status === 'complete' && (
-                <div className="flex justify-center pt-8">
+                <div className="flex justify-center pt-8 pb-4">
                   <button
                     onClick={reset}
-                    className="flex items-center gap-2 px-6 py-2.5 bg-brand-primary text-white rounded-full hover:bg-brand-secondary transition-all font-medium shadow-md hover:shadow-lg active:scale-95"
+                    className="flex items-center gap-2 px-6 py-3 sm:py-2.5 bg-brand-primary text-white rounded-full hover:bg-brand-secondary transition-all font-medium shadow-md hover:shadow-lg active:scale-95 touch-manipulation min-h-[44px]"
                   >
                     <span>Start New Research</span>
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -124,14 +124,14 @@ export function ResearchAgent() {
         )}
 
         {state.error && (
-          <div className="fixed bottom-8 right-8 z-50 max-w-md">
+          <div className="fixed bottom-20 sm:bottom-8 right-4 sm:right-8 left-4 sm:left-auto z-50 max-w-md safe-x">
             <ErrorDisplay error={state.error} onDismiss={reset} onRetry={retry} />
           </div>
         )}
       </main>
 
       {hasStarted && !isProcessing && (
-        <div className="fixed bottom-0 left-0 right-0 bg-gradient-to-t from-bg-main via-bg-main to-transparent pt-8 sm:pt-12 pb-4 sm:pb-8 px-3 sm:px-6 md:px-8 pointer-events-none">
+        <div className="fixed bottom-0 left-0 right-0 bg-gradient-to-t from-bg-main via-bg-main to-transparent pt-8 sm:pt-12 px-3 sm:px-6 md:px-8 pointer-events-none fixed-bottom-safe safe-x">
           <div className="max-w-2xl mx-auto glass rounded-2xl p-2 shadow-2xl pointer-events-auto">
             <QueryInput
               onSubmit={submitQuery}

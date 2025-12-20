@@ -39,7 +39,7 @@ export function QueryInput({ onSubmit, disabled }: QueryInputProps) {
         <button
           type="submit"
           disabled={disabled || !query.trim()}
-          className={`w-10 h-10 flex items-center justify-center rounded-full transition-all flex-shrink-0 ${query.trim()
+          className={`w-11 h-11 sm:w-10 sm:h-10 flex items-center justify-center rounded-full transition-all flex-shrink-0 touch-manipulation ${query.trim()
             ? 'bg-brand-primary text-white shadow-lg shadow-brand-primary/20 hover:scale-110 active:scale-95'
             : 'text-text-secondary opacity-30 cursor-not-allowed'
             }`}

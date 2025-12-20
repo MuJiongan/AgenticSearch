@@ -22,7 +22,7 @@ export function ApiKeyConfig({ apiKeys, onSave }: ApiKeyConfigProps) {
     <div className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider transition-all border ${hasKeys
+        className={`flex items-center gap-2 px-3 py-2 sm:py-1.5 rounded-full text-xs font-bold uppercase tracking-wider transition-all border touch-manipulation min-h-[44px] sm:min-h-0 ${hasKeys
           ? 'bg-emerald-50 dark:bg-emerald-900/10 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-900/30 hover:bg-emerald-100 dark:hover:bg-emerald-900/20'
           : 'bg-rose-50 dark:bg-rose-900/10 text-rose-600 dark:text-rose-400 border-rose-100 dark:border-rose-900/30 hover:bg-rose-100 dark:hover:bg-rose-900/20'
           }`}
@@ -40,7 +40,7 @@ export function ApiKeyConfig({ apiKeys, onSave }: ApiKeyConfigProps) {
             className="fixed inset-0 z-40 bg-black/20 dark:bg-black/40 backdrop-blur-[2px]"
             onClick={() => setIsOpen(false)}
           />
-          <div className="absolute right-0 mt-3 w-80 bg-bg-main rounded-2xl shadow-2xl border border-border-subtle p-6 z-50 animate-fade-in-up">
+          <div className="fixed sm:absolute inset-x-4 sm:inset-x-auto bottom-4 sm:bottom-auto sm:right-0 sm:mt-3 w-auto sm:w-80 bg-bg-main rounded-2xl shadow-2xl border border-border-subtle p-6 z-50 animate-fade-in-up safe-x">
             <h3 className="text-sm font-bold text-text-primary mb-5 flex items-center gap-2">
               <svg className="w-4 h-4 text-text-secondary opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
@@ -98,13 +98,13 @@ export function ApiKeyConfig({ apiKeys, onSave }: ApiKeyConfigProps) {
               <div className="flex gap-2 pt-4">
                 <button
                   onClick={handleSave}
-                  className="flex-1 px-4 py-2 bg-brand-primary text-white rounded-lg text-sm font-semibold hover:bg-brand-secondary transition-all shadow-md shadow-brand-primary/10"
+                  className="flex-1 px-4 py-3 sm:py-2 bg-brand-primary text-white rounded-lg text-sm font-semibold hover:bg-brand-secondary transition-all shadow-md shadow-brand-primary/10 touch-manipulation min-h-[44px]"
                 >
                   Save Config
                 </button>
                 <button
                   onClick={() => setIsOpen(false)}
-                  className="px-4 py-2 bg-bg-main text-text-secondary rounded-lg text-sm font-semibold hover:bg-gray-100 dark:hover:bg-gray-800 transition-all border border-border-subtle"
+                  className="px-4 py-3 sm:py-2 bg-bg-main text-text-secondary rounded-lg text-sm font-semibold hover:bg-gray-100 dark:hover:bg-gray-800 transition-all border border-border-subtle touch-manipulation min-h-[44px]"
                 >
                   Cancel
                 </button>
