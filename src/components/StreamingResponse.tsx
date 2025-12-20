@@ -173,12 +173,12 @@ export function StreamingResponse({ content, status, sources }: StreamingRespons
 
               if (sourceIndex !== -1) {
                 return (
-                  <sup className="mx-0.5">
+                  <sup className="citation-sup">
                     <a
                       href={href}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center justify-center min-w-[14px] h-[14px] px-0.5 text-[9px] font-bold bg-brand-primary/10 text-brand-primary rounded-sm hover:bg-brand-primary hover:text-white transition-all no-underline border-none"
+                      className="citation-badge"
                       title={String(children)}
                     >
                       {sourceIndex + 1}

@@ -62,6 +62,12 @@ body {
     min-width: 44px;
   }
 
+  /* Exception: Citation badges should stay small */
+  .citation-badge {
+    min-height: auto !important;
+    min-width: auto !important;
+  }
+
   /* Prevent callout on long press */
   img,
   a {
@@ -145,6 +151,38 @@ body>* {
 
 .prose a {
   @apply text-brand-primary hover:underline font-medium;
+}
+
+/* Citation badge styling - must use explicit values to avoid prose/touch scaling */
+.citation-sup {
+  vertical-align: super;
+  font-size: 0.6em;
+  line-height: 0;
+  margin: 0 1px;
+}
+
+.citation-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 14px !important;
+  height: 14px !important;
+  padding: 0 2px;
+  font-size: 9px !important;
+  font-weight: 700;
+  line-height: 1 !important;
+  background-color: rgba(16, 163, 127, 0.1);
+  color: var(--color-brand-primary);
+  border-radius: 2px;
+  text-decoration: none !important;
+  border: none;
+  transition: all 0.15s ease;
+}
+
+.citation-badge:hover {
+  background-color: var(--color-brand-primary);
+  color: white;
+  text-decoration: none !important;
 }
 
 .prose code:not(pre code) {
