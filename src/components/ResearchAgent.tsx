@@ -31,7 +31,7 @@ export function ResearchAgent() {
   return (
     <div className="min-h-screen bg-bg-main text-text-primary selection:bg-brand-primary/20 transition-colors duration-300">
       {/* Top Navigation */}
-      <nav className="fixed top-0 left-0 right-0 h-16 border-b border-border-subtle bg-bg-nav backdrop-blur-md z-50 flex items-center justify-between px-4 sm:px-6 transition-colors duration-300 safe-top safe-x">
+      <nav className="fixed top-0 left-0 right-0 h-16 border-b border-border-subtle bg-bg-nav backdrop-blur-md z-50 flex items-center justify-between px-4 sm:px-6 lg:px-8 xl:px-12 transition-colors duration-300 safe-top safe-x">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 bg-brand-primary rounded-lg flex items-center justify-center text-white font-bold text-xl">
             A
