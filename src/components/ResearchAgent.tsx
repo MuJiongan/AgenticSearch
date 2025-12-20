@@ -130,16 +130,6 @@ export function ResearchAgent() {
         )}
       </main>
 
-      {hasStarted && !isProcessing && (
-        <div className="fixed bottom-0 left-0 right-0 bg-gradient-to-t from-bg-main via-bg-main to-transparent pt-8 sm:pt-12 px-3 sm:px-6 md:px-8 pointer-events-none fixed-bottom-safe safe-x">
-          <div className="max-w-2xl mx-auto glass rounded-2xl p-2 shadow-2xl pointer-events-auto">
-            <QueryInput
-              onSubmit={submitQuery}
-              disabled={isProcessing}
-            />
-          </div>
-        </div>
-      )}
     </div>
   )
 }
