@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import ReactMarkdown from 'react-markdown'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { vscDarkPlus, vs } from 'react-syntax-highlighter/dist/esm/styles/prism'
@@ -11,8 +11,91 @@ type StreamingResponseProps = {
   sources: Source[]
 }
 
+/**
+ * Normalizes a URL for comparison by:
+ * - Removing trailing slashes
+ * - Removing common tracking parameters
+ * - Lowercasing the hostname
+ * - Removing fragments
+ */
+function normalizeUrl(url: string): string {
+  try {
+    const parsed = new URL(url)
+    // Lowercase hostname
+    parsed.hostname = parsed.hostname.toLowerCase()
+    // Remove fragment
+    parsed.hash = ''
+    // Remove common tracking parameters
+    const trackingParams = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'ref', 'source']
+    trackingParams.forEach(param => parsed.searchParams.delete(param))
+    // Get the URL and remove trailing slash from pathname
+    let normalized = parsed.toString()
+    // Remove trailing slash (but not for root paths)
+    if (normalized.endsWith('/') && parsed.pathname !== '/') {
+      normalized = normalized.slice(0, -1)
+    }
+    return normalized
+  } catch {
+    // If URL parsing fails, return as-is but lowercase and trimmed
+    return url.toLowerCase().trim().replace(/\/+$/, '')
+  }
+}
+
+/**
+ * Extracts the core domain and path for fuzzy matching
+ * Used when exact normalized matching fails
+ */
+function extractCorePath(url: string): string {
+  try {
+    const parsed = new URL(url)
+    // Remove www prefix and get domain + path without query/fragment
+    const domain = parsed.hostname.replace(/^www\./, '').toLowerCase()
+    const path = parsed.pathname.replace(/\/+$/, '') || '/'
+    return `${domain}${path}`
+  } catch {
+    return url.toLowerCase().trim()
+  }
+}
+
 export function StreamingResponse({ content, status, sources }: StreamingResponseProps) {
   const [copied, setCopied] = useState(false)
+
+  // Build lookup maps for efficient URL matching
+  // Uses both normalized URLs and core paths for fuzzy matching
+  const urlLookup = useMemo(() => {
+    const normalizedMap = new Map<string, number>()
+    const corePathMap = new Map<string, number>()
+
+    sources.forEach((source, index) => {
+      const normalized = normalizeUrl(source.url)
+      const corePath = extractCorePath(source.url)
+
+      // Only add if not already present (first occurrence wins)
+      if (!normalizedMap.has(normalized)) {
+        normalizedMap.set(normalized, index)
+      }
+      if (!corePathMap.has(corePath)) {
+        corePathMap.set(corePath, index)
+      }
+    })
+
+    return { normalizedMap, corePathMap }
+  }, [sources])
+
+  // Function to find source index with fallback matching
+  const findSourceIndex = (href: string): number => {
+    // First try exact normalized match
+    const normalizedHref = normalizeUrl(href)
+    let index = urlLookup.normalizedMap.get(normalizedHref)
+    if (index !== undefined) return index
+
+    // Fallback to core path matching (domain + path only)
+    const corePathHref = extractCorePath(href)
+    index = urlLookup.corePathMap.get(corePathHref)
+    if (index !== undefined) return index
+
+    return -1
+  }
 
   if (!content && status !== 'synthesizing') {
     return null
@@ -86,7 +169,7 @@ export function StreamingResponse({ content, status, sources }: StreamingRespons
           remarkPlugins={[remarkGfm]}
           components={{
             a({ node, children, href, ...props }: any) {
-              const sourceIndex = sources.findIndex(s => s.url === href)
+              const sourceIndex = href ? findSourceIndex(href) : -1
 
               if (sourceIndex !== -1) {
                 return (
