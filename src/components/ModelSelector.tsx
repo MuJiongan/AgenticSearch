@@ -234,14 +234,12 @@ export function ModelSelector({ value, onChange, disabled, apiKey }: ModelSelect
                         </span>
                       )}
                     </div>
-                    <div className="text-xs text-text-secondary truncate flex items-center gap-2">
-                      <span>{model.id}</span>
-                      {inputPrice && outputPrice && (
-                        <span className="text-text-secondary/70">
-                          • {inputPrice} in / {outputPrice} out
-                        </span>
-                      )}
-                    </div>
+                    <div className="text-xs text-text-secondary truncate">{model.id}</div>
+                    {inputPrice && outputPrice && (
+                      <div className="text-[10px] text-text-secondary/70 mt-0.5">
+                        {inputPrice} in / {outputPrice} out
+                      </div>
+                    )}
                   </div>
                   <div className="flex items-center gap-2 ml-2">
                     {isSaved && (
