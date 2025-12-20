@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { createPortal } from 'react-dom'
 import type { ApiKeys } from '../types/index.js'
 
 type ApiKeyConfigProps = {
@@ -34,13 +35,13 @@ export function ApiKeyConfig({ apiKeys, onSave }: ApiKeyConfigProps) {
         </svg>
       </button>
 
-      {isOpen && (
+      {isOpen && createPortal(
         <>
           <div
-            className="fixed inset-0 z-40 bg-black/20 dark:bg-black/40 backdrop-blur-[2px]"
+            className="fixed inset-0 z-[9998] bg-black/20 dark:bg-black/40 backdrop-blur-[2px]"
             onClick={() => setIsOpen(false)}
           />
-          <div className="fixed sm:absolute inset-x-4 sm:inset-x-auto bottom-4 sm:bottom-auto sm:right-0 sm:mt-3 w-auto sm:w-80 bg-bg-main rounded-2xl shadow-2xl border border-border-subtle p-6 z-50 animate-fade-in-up safe-x">
+          <div className="fixed inset-x-4 bottom-4 sm:top-20 sm:bottom-auto sm:right-4 sm:left-auto w-auto sm:w-80 bg-bg-main rounded-2xl shadow-2xl border border-border-subtle p-6 z-[9999] animate-fade-in-up safe-x">
             <h3 className="text-sm font-bold text-text-primary mb-5 flex items-center gap-2">
               <svg className="w-4 h-4 text-text-secondary opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
@@ -111,7 +112,8 @@ export function ApiKeyConfig({ apiKeys, onSave }: ApiKeyConfigProps) {
               </div>
             </div>
           </div>
-        </>
+        </>,
+        document.body
       )}
 
     </div>
