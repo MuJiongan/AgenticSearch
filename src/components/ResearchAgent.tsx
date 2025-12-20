@@ -44,7 +44,7 @@ export function ResearchAgent() {
         </div>
       </nav>
 
-      <main className="pt-20 sm:pt-24 pb-32 px-4 sm:px-6 md:px-8 max-w-4xl mx-auto overflow-x-hidden">
+      <main className="pt-20 sm:pt-24 pb-32 px-4 sm:px-6 md:px-8 max-w-4xl mx-auto">
         {!hasStarted ? (
           <div className="flex flex-col items-center justify-center min-h-[70vh] sm:min-h-[75vh] animate-fade-in-up">
 

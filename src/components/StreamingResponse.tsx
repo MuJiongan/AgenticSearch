@@ -120,7 +120,7 @@ export function StreamingResponse({ content, status, sources }: StreamingRespons
   }
 
   return (
-    <div className="animate-fade-in-up">
+    <div className="animate-fade-in-up min-w-0">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2 text-text-secondary">
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -168,6 +168,13 @@ export function StreamingResponse({ content, status, sources }: StreamingRespons
         <ReactMarkdown
           remarkPlugins={[remarkGfm]}
           components={{
+            table({ node, children, ...props }: any) {
+              return (
+                <div className="table-wrapper w-full max-w-full overflow-x-auto">
+                  <table {...props}>{children}</table>
+                </div>
+              )
+            },
             a({ node, children, href, ...props }: any) {
               const sourceIndex = href ? findSourceIndex(href) : -1
 
