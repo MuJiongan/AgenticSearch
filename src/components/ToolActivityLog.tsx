@@ -113,7 +113,7 @@ function ToolDetails({ toolCall }: { toolCall: ToolCall }) {
               return (
                 <div
                   key={i}
-                  className="flex items-center gap-2 px-2 py-1.5 rounded-md bg-gray-50 dark:bg-gray-800/50 border border-border-subtle"
+                  className="flex items-center gap-2 px-2 py-1.5 rounded-md bg-white/50 dark:bg-gray-800/30 border border-gray-200/60 dark:border-gray-700/30"
                 >
                   <svg className="w-3 h-3 text-text-secondary opacity-60 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
