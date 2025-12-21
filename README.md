@@ -26,8 +26,9 @@ A modern AI-powered web research agent with streaming responses, multi-model sup
 
 ## Technology Stack
 
+- **Runtime**: Bun
 - **Frontend**: React 19.2 + TypeScript
-- **Build Tool**: Vite 7.2
+- **Build Tool**: Vite 7.3
 - **Styling**: Tailwind CSS 4.1
 - **Markdown**: react-markdown with syntax highlighting
 - **APIs**: OpenRouter (LLM) + Parallel.ai (Search & Extract)
@@ -35,20 +36,19 @@ A modern AI-powered web research agent with streaming responses, multi-model sup
 ## Setup
 
 ### Prerequisites
-- Node.js (v18 or higher recommended)
-- npm or yarn
+- [Bun](https://bun.sh) (v1.0 or higher)
 
 ### Installation
 
 1. Clone the repository:
 ```bash
 git clone <repository-url>
-cd ParallelSearch
+cd AgenticSearch
 ```
 
 2. Install dependencies:
 ```bash
-npm install
+bun install
 ```
 
 3. Get API Keys:
@@ -57,7 +57,7 @@ npm install
 
 4. Start the development server:
 ```bash
-npm run dev
+bun run dev
 ```
 
 5. Open [http://localhost:5173](http://localhost:5173)
@@ -109,16 +109,19 @@ This avoids CORS issues during development.
 
 ```bash
 # Development server
-npm run dev
+bun run dev
 
 # Build for production
-npm run build
+bun run build
+
+# Type check only
+bun run typecheck
 
 # Preview production build
-npm run preview
+bun run preview
 
 # Lint code
-npm run lint
+bun run lint
 ```
 
 ## Project Structure
@@ -166,7 +169,7 @@ Stored in browser localStorage:
 
 1. Build the project:
 ```bash
-npm run build
+bun run build
 ```
 
 2. The `dist/` folder contains the static build

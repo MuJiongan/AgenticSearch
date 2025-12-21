@@ -1,0 +1,14 @@
+# Bun configuration file
+# https://bun.sh/docs/runtime/configuration
+
+[install]
+# Use the exact versions from bun.lockb
+frozen = false
+
+[install.cache]
+# Enable global cache for faster installs
+disable = false
+
+[run]
+# Silence the "bun run" output
+silent = false
