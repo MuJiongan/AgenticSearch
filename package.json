@@ -4,10 +4,11 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
-    "lint": "eslint .",
-    "preview": "vite preview"
+    "dev": "bunx --bun vite",
+    "build": "bun run typecheck && bunx --bun vite build",
+    "typecheck": "tsc -b",
+    "lint": "bunx eslint .",
+    "preview": "bunx --bun vite preview"
   },
   "dependencies": {
     "@tailwindcss/postcss": "^4.1.18",
