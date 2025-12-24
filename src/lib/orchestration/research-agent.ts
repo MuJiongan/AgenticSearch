@@ -21,6 +21,13 @@ export type ResearchQueryParams = {
 export async function executeResearchQuery(params: ResearchQueryParams): Promise<void> {
   const client = new OpenRouterClient(params.openrouterApiKey)
 
+  // Track cumulative usage across all API calls
+  let cumulativeUsage = {
+    prompt_tokens: 0,
+    completion_tokens: 0,
+    total_tokens: 0
+  }
+
   const messages: Message[] = [
     {
       role: 'system',
@@ -169,16 +176,22 @@ Your goal is to provide thorough, well-researched, and properly cited answers th
       onStream: params.onStreamChunk
     }) as StreamingResult
 
+    // Accumulate usage from EVERY API call (not just the final one)
+    if (result.usage) {
+      cumulativeUsage.prompt_tokens += result.usage.prompt_tokens
+      cumulativeUsage.completion_tokens += result.usage.completion_tokens
+      cumulativeUsage.total_tokens += result.usage.total_tokens
+
+      // Update usage after each call so costs are tracked correctly
+      params.onUsageUpdate({
+        promptTokens: cumulativeUsage.prompt_tokens,
+        completionTokens: cumulativeUsage.completion_tokens,
+        totalTokens: cumulativeUsage.total_tokens
+      })
+    }
+
     // If no tool calls, content was already streamed - we're done!
     if (result.toolCalls.length === 0) {
-      // Pass along usage data from the API response
-      if (result.usage) {
-        params.onUsageUpdate({
-          promptTokens: result.usage.prompt_tokens,
-          completionTokens: result.usage.completion_tokens,
-          totalTokens: result.usage.total_tokens
-        })
-      }
       return
     }
 
