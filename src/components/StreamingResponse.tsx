@@ -217,13 +217,16 @@ export function StreamingResponse({ content, status, sources }: StreamingRespons
                 </a>
               )
             },
-            code({ node, inline, className, children, ...props }: any) {
+            pre({ children }: any) {
+              return <>{children}</>
+            },
+            code({ node, className, children, ...props }: any) {
               const match = /language-(\w+)/.exec(className || '')
               const codeString = String(children).replace(/\n$/, '')
               const isCodeCopied = copiedCodeBlock === codeString
 
-              // Render code block (with or without language)
-              if (!inline) {
+              // Only render as code block if it has a language class (fenced code block with ```)
+              if (match) {
                 return (
                   <div className="relative group overflow-x-auto max-w-full">
                     <div className="absolute right-4 top-4 opacity-0 group-hover:opacity-100 transition-opacity z-10">
@@ -251,7 +254,7 @@ export function StreamingResponse({ content, status, sources }: StreamingRespons
                     </div>
                     <SyntaxHighlighter
                       style={isDarkMode ? vscDarkPlus : vs}
-                      language={match ? match[1] : 'text'}
+                      language={match[1]}
                       PreTag="div"
                       className={`!my-0 rounded-xl !p-6 ${isDarkMode ? '!bg-slate-900' : '!bg-gray-50'}`}
                       {...props}
@@ -262,7 +265,7 @@ export function StreamingResponse({ content, status, sources }: StreamingRespons
                 )
               }
 
-              // Render inline code
+              // Render inline code (single backticks)
               return (
                 <code className="bg-bg-main text-pink-600 dark:text-pink-400 px-1.5 py-0.5 rounded text-sm font-mono font-medium ring-1 ring-border-subtle" {...props}>
                   {children}
