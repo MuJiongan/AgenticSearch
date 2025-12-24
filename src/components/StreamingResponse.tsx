@@ -59,6 +59,7 @@ function extractCorePath(url: string): string {
 
 export function StreamingResponse({ content, status, sources }: StreamingResponseProps) {
   const [copied, setCopied] = useState(false)
+  const [copiedCodeBlock, setCopiedCodeBlock] = useState<string | null>(null)
 
   // Build lookup maps for efficient URL matching
   // Uses both normalized URLs and core paths for fuzzy matching
@@ -116,6 +117,16 @@ export function StreamingResponse({ content, status, sources }: StreamingRespons
       setTimeout(() => setCopied(false), 2000)
     } catch (err) {
       console.error('Failed to copy text:', err)
+    }
+  }
+
+  const copyCodeBlock = async (code: string) => {
+    try {
+      await navigator.clipboard.writeText(code)
+      setCopiedCodeBlock(code)
+      setTimeout(() => setCopiedCodeBlock(null), 2000)
+    } catch (err) {
+      console.error('Failed to copy code:', err)
     }
   }
 
@@ -206,32 +217,59 @@ export function StreamingResponse({ content, status, sources }: StreamingRespons
                 </a>
               )
             },
-            code({ node, inline, className, children, ...props }: any) {
+            pre({ children }: any) {
+              return <>{children}</>
+            },
+            code({ node, className, children, ...props }: any) {
               const match = /language-(\w+)/.exec(className || '')
-              return !inline && match ? (
-                <div className="relative group overflow-x-auto max-w-full">
-                  <div className="absolute right-4 top-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button className="p-1.5 bg-black/10 dark:bg-white/10 hover:bg-black/20 dark:hover:bg-white/20 rounded text-gray-600 dark:text-white/50 hover:text-gray-900 dark:hover:text-white transition-colors">
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                      </svg>
-                    </button>
+              const codeString = String(children).replace(/\n$/, '')
+              const isCodeCopied = copiedCodeBlock === codeString
+
+              // Only render as code block if it has a language class (fenced code block with ```)
+              if (match) {
+                return (
+                  <div className="relative group overflow-x-auto max-w-full">
+                    <div className="absolute right-4 top-4 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                      <button
+                        onClick={() => copyCodeBlock(codeString)}
+                        className="flex items-center gap-1.5 px-2 py-1.5 bg-black/20 dark:bg-white/10 hover:bg-black/30 dark:hover:bg-white/20 rounded-md text-gray-100 dark:text-white/70 hover:text-white transition-colors text-xs font-medium"
+                        title="Copy code"
+                      >
+                        {isCodeCopied ? (
+                          <>
+                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                            <span>Copied!</span>
+                          </>
+                        ) : (
+                          <>
+                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                            </svg>
+                            <span>Copy</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                    <SyntaxHighlighter
+                      style={isDarkMode ? vscDarkPlus : vs}
+                      language={match[1]}
+                      PreTag="div"
+                      className={`!my-0 rounded-xl !p-6 ${isDarkMode ? '!bg-slate-900' : '!bg-gray-50'}`}
+                      {...props}
+                    >
+                      {codeString}
+                    </SyntaxHighlighter>
                   </div>
-                  <SyntaxHighlighter
-                    style={isDarkMode ? vscDarkPlus : vs}
-                    language={match[1]}
-                    PreTag="div"
-                    className={`!my-0 rounded-xl !p-6 ${isDarkMode ? '!bg-slate-900' : '!bg-gray-50'}`}
-                    {...props}
-                  >
-                    {String(children).replace(/\n$/, '')}
-                  </SyntaxHighlighter>
-                </div>
-              ) : (
+                )
+              }
+
+              // Render inline code (single backticks)
+              return (
                 <code className="bg-bg-main text-pink-600 dark:text-pink-400 px-1.5 py-0.5 rounded text-sm font-mono font-medium ring-1 ring-border-subtle" {...props}>
                   {children}
                 </code>
-
               )
             }
           }}
