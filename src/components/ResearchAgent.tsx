@@ -6,7 +6,7 @@ import { ModelSelector } from './ModelSelector.js'
 import { QueryInput } from './QueryInput.js'
 import { ErrorDisplay } from './ErrorDisplay.js'
 import { ToolActivityLog } from './ToolActivityLog.js'
-import { StreamingResponse } from './StreamingResponse.js'
+import { CitationModeResponse } from './CitationModeResponse.js'
 import { SourceCitations } from './SourceCitations.js'
 import { ThemeToggle } from './ThemeToggle.js'
 import { ResponseMetrics } from './ResponseMetrics.js'
@@ -96,10 +96,13 @@ export function ResearchAgent() {
             <div className="grid gap-12">
               <ToolActivityLog toolCalls={state.toolCalls} />
 
-              <StreamingResponse
+              <CitationModeResponse
                 content={state.currentResponse}
                 status={state.status}
                 sources={state.sources}
+                model={state.model}
+                openrouterApiKey={apiKeys.openrouter}
+                parallelApiKey={apiKeys.parallel}
               />
 
               {state.currentResponse && <ResponseMetrics usage={state.usage} modelPricing={currentModelPricing} />}
